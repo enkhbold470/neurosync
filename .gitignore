@@ -1,0 +1,51 @@
+# macOS
+.DS_Store
+._*
+
+# Xcode — build products
+build/
+DerivedData/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
+# Xcode — per-user state. Schemes live in xcshareddata; xcuserdata is local noise
+# (window positions, breakpoints, last-selected tab) and causes pointless diffs.
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
+# Xcode — playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# CocoaPods / Carthage (unused here, but cheap insurance if they ever land)
+Pods/
+Carthage/Build/
+
+# Snapshots written by the test suite at runtime
+neurosync-shots/
+
+# Instruments
+*.trace
+
+# Injected secrets — none today, and this keeps it that way
+*.xcconfig.local
+.env
+.env.*
+!.env.example
+
+# Internal launch copy — not part of the open-source project
+LAUNCH.md
