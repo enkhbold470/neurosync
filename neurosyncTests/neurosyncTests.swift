@@ -275,3 +275,66 @@ private func feed(_ e: FocusEngine, seconds: Double, fs: Double,
     let err = Vertex.parseDiag("DIAG err=adc_timeout")
     #expect(err?.error == "adc_timeout")
 }
+
+// MARK: - The ambient readout (menu bar)
+
+// A number in the window sits beside a scope, a spectrum and a paragraph of caveats.
+// A number in the menu bar sits beside the clock. It is glanced at and believed, with none
+// of that context — so it must show a dash unless every gate is open.
+
+private func metricsFor(fsOk: Bool = true, signalOk: Bool = true, calibrating: Bool = false,
+                        warmingUp: Bool = false, focus: Double = 62) -> FocusMetrics {
+    var m = FocusMetrics()
+    m.fsOk = fsOk
+    m.fsReason = fsOk ? nil : focusFeasibility(fs: 90).reason
+    m.signalOk = signalOk
+    m.calibrating = calibrating
+    m.warmingUp = warmingUp
+    m.focus = focus
+    m.rmsUv = signalOk ? 12.4 : 0.31
+    return m
+}
+
+@Test func menuBarShowsANumberOnlyWhenEveryGateIsOpen() {
+    #expect(ambientValue(connected: true, metrics: metricsFor()) == "62")
+}
+
+@Test func menuBarShowsADashBehindEveryClosedGate() {
+    // No board at all.
+    #expect(ambientValue(connected: false, metrics: metricsFor()) == "—")
+
+    // Electrode off a head. The window may show the frozen score next to the reason it froze;
+    // the menu bar has nowhere to put the reason, so it shows nothing.
+    #expect(ambientValue(connected: true, metrics: metricsFor(signalOk: false)) == "—")
+
+    // Sample rate that cannot carry the index — mains would read as concentration.
+    #expect(ambientValue(connected: true, metrics: metricsFor(fsOk: false)) == "—")
+
+    // No baseline frozen yet, so there is nothing for 50 to mean.
+    #expect(ambientValue(connected: true, metrics: metricsFor(calibrating: true)) == "—")
+
+    // Analysis window not full.
+    #expect(ambientValue(connected: true, metrics: metricsFor(warmingUp: true)) == "—")
+}
+
+@Test func aDetachedElectrodeCanNeverPutANumberInTheMenuBar() {
+    // The frozen score survives behind the gate (the window shows it, greyed). The menu bar
+    // must NOT surface it — a stale 88 beside the clock is indistinguishable from a live 88.
+    let stale = metricsFor(signalOk: false, focus: 88)
+    #expect(stale.focus == 88)
+    #expect(ambientValue(connected: true, metrics: stale) == "—")
+}
+
+@Test func gatePriorityPutsSampleRateFirst() {
+    // An infeasible rate makes the score meaningless no matter how clean the signal is,
+    // so it must be the reason reported — not "calibrating".
+    let m = metricsFor(fsOk: false, calibrating: true)
+    let g = blockingGate(connected: true, metrics: m)
+    #expect(g?.kind == .rate)
+    #expect(g?.detail.contains("directly inside β") == true)
+}
+
+@Test func noGateWhenThereIsNoBoard() {
+    // Disconnected is not a "refusal" — there is simply nothing to refuse yet.
+    #expect(blockingGate(connected: false, metrics: metricsFor(signalOk: false)) == nil)
+}

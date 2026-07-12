@@ -71,42 +71,29 @@ final class VertexModel {
 
     var metrics: FocusMetrics { snap.metrics }
 
-    /// The single gate currently blocking a trustworthy score, if any. Order is deliberate:
-    /// an infeasible sample rate makes the score meaningless no matter how good the signal is.
+    /// The single gate currently blocking a trustworthy score, if any.
+    /// The decision lives in `Core/Gate.swift` — pure, nonisolated, and tested without a radio.
     var blockingGate: Gate? {
-        guard isConnected else { return nil }
-        let m = metrics
-        if !m.fsOk {
-            return Gate(
-                title: "SCORE WITHHELD — SAMPLE RATE",
-                detail: m.fsReason ?? "The Pope index is not defensible at this sample rate.",
-                kind: .rate
-            )
-        }
-        if m.warmingUp {
-            return Gate(title: "FILLING WINDOW", detail: "Collecting the first analysis window.", kind: .warmup)
-        }
-        if !m.signalOk {
-            return Gate(
-                title: "NO BIOSIGNAL",
-                detail: String(format: "%.2f µV RMS — below the 1.5 µV noise floor. The electrode is not making skin contact.", m.rmsUv),
-                kind: .signal
-            )
-        }
-        if m.calibrating {
-            return Gate(
-                title: "CALIBRATING BASELINE",
-                detail: String(format: "%.0f s of good signal remaining. 50 will mean YOUR baseline.", m.calibrationLeftSec),
-                kind: .calibrating
-            )
-        }
-        return nil
+        neurosync.blockingGate(connected: isConnected, metrics: metrics)
     }
 
-    struct Gate: Equatable {
-        enum Kind { case rate, signal, calibrating, warmup }
-        var title: String
-        var detail: String
-        var kind: Kind
+    // MARK: Ambient readout
+
+    /// What the menu bar shows. A dash whenever a score cannot be trusted.
+    var menuBarValue: String {
+        ambientValue(connected: isConnected, metrics: metrics)
+    }
+
+    var menuBarState: String {
+        switch state {
+        case .idle: return "NO DEVICE"
+        case .bluetoothOff: return "BT OFF"
+        case .unauthorized: return "BT DENIED"
+        case .scanning: return "SCANNING"
+        case .connecting: return "CONNECTING"
+        case .interrogating: return "READING BOARD"
+        case .failed: return "FAULT"
+        case .streaming: return blockingGate == nil ? "LIVE" : "WITHHELD"
+        }
     }
 }

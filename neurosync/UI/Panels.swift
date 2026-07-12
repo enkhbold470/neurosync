@@ -10,7 +10,7 @@ import SwiftUI
 /// The gates are not error states — they are the product. A score that appears when the
 /// electrode is off a head is worth nothing, so we say plainly why we are withholding it.
 struct GateBanner: View {
-    let gate: VertexModel.Gate
+    let gate: Gate
     var onFixRate: (() -> Void)?
 
     private var tint: Color {

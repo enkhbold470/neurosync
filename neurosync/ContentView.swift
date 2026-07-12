@@ -12,7 +12,8 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var model = VertexModel()
+    /// Injected by the App so the window and the menu bar share one source of truth.
+    let model: VertexModel
 
     var body: some View {
         VStack(spacing: 0) {
@@ -280,5 +281,5 @@ private struct Instrument: View {
 }
 
 #Preview {
-    ContentView()
+    ContentView(model: VertexModel())
 }

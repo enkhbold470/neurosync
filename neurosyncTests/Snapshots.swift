@@ -47,7 +47,7 @@ private func liveMetrics() -> FocusMetrics {
 @MainActor
 @Test func snapshotDisconnected() throws {
     // The honest hero state: no board, no numbers, a flat line.
-    let path = try render(ContentView(), size: CGSize(width: 1100, height: 720),
+    let path = try render(ContentView(model: VertexModel()), size: CGSize(width: 1100, height: 720),
                           to: "01-disconnected.png")
     print("SNAPSHOT \(path)")
     #expect(FileManager.default.fileExists(atPath: path))
@@ -88,15 +88,15 @@ private func liveMetrics() -> FocusMetrics {
 @MainActor
 @Test func snapshotGates() throws {
     // The three refusals, which are the product.
-    let rate = VertexModel.Gate(
+    let rate = Gate(
         title: "SCORE WITHHELD — SAMPLE RATE",
         detail: focusFeasibility(fs: 90).reason ?? "",
         kind: .rate)
-    let signal = VertexModel.Gate(
+    let signal = Gate(
         title: "NO BIOSIGNAL",
         detail: "0.31 µV RMS — below the 1.5 µV noise floor. The electrode is not making skin contact.",
         kind: .signal)
-    let cal = VertexModel.Gate(
+    let cal = Gate(
         title: "CALIBRATING BASELINE",
         detail: "12 s of good signal remaining. 50 will mean YOUR baseline.",
         kind: .calibrating)
