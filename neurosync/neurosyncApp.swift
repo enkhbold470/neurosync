@@ -2,8 +2,6 @@
 //  neurosyncApp.swift
 //  neurosync
 //
-//  Created by Inky Ganbold on 7/12/26.
-//
 
 import SwiftUI
 
@@ -13,5 +11,6 @@ struct neurosyncApp: App {
         WindowGroup {
             ContentView()
         }
+        .windowResizability(.contentMinSize)
     }
 }
