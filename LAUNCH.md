@@ -1,137 +1,126 @@
-# Vertex — launch script
+# Vertex — launch
 
-Read it cold. Short sentences. No adverbs. Let the screen do the proving.
+The video is not a demo. Nobody is convinced by a demo; they're convinced by a thesis, and then
+they go check the demo themselves. The site is where the proof lives. The video's only job is to
+make someone want to go look.
 
-The pitch is not "our focus number goes up." Everyone says that. The pitch is:
+## The headline
 
-> **This is the only one that tells you when it doesn't know.**
+**Company:** The mind, unbottlenecked.
+**Product:** Focus is a stat. Train it.
+
+Those are the two lines. Everything else is support. `Focus is a stat` is the one to lead with —
+it's already the language of the audience. Aim is a stat. APM is a stat. Stats get trained.
 
 ---
 
-## The script
+## The script (~60s)
 
-**COLD OPEN — 0:00**
+**THE THESIS — 0:00**
 
-> This is one dry electrode. It sits behind your ear.
-> No gel. No cap. Nothing on your forehead.
-> Watch my spectrum when I close my eyes.
+> You think faster than you can type.
+> Every interface since the typewriter has forced your mind through a straw.
+> That's the last bottleneck, and almost nobody is working on it.
+> We are. Today I'll show you rung one.
 
-**BERGER — 0:05**
+**THE PRODUCT, IN ONE LINE — 0:10**
 
-*Eyes closed. Ten seconds. Alpha blooms in the shaded band.*
+> Focus is a stat.
+> Not a mood. Not a vibe. A number — like aim, like APM.
+> What gets measured gets trained. We start there.
 
-> That's alpha. [read the Hz off the screen.]
-> Hans Berger found it in 1929. It's the oldest result in neuroscience.
-> It's also the hardest thing to fake. It has to show up at the right frequency, the moment my
-> eyes shut, and die when they open.
+**WHAT VERTEX IS — 0:18**
 
-*Eyes open. It collapses.*
+> Vertex is a dry-EEG insert for the gaming headset you already own.
+> One channel, behind your ear. No gel. No cap. Nothing on your forehead.
+> It reads one dimension of your cognitive state, in real time.
+> That's it. That's rung one.
 
-> That's a brain. Not a loading animation.
+**THE LADDER — 0:30**
 
-**REFUSAL ONE — 0:18**
+> Rung two: your brain state becomes ambient context for the machine. That's bci-mcp. Open
+> source, today.
+> Rung three: the thought-speed interface. That's the point.
+> We start with a focus score on a Dota overlay. We end with the mind, unbottlenecked.
 
-*Take the earpad off your head.*
-
-> Point three microvolts. That's the noise floor of the chip.
-> A detached electrode reads as flawless concentration on an ungated score.
-> Ours refuses to give you a number.
-
-**REFUSAL TWO — 0:27**
-
-*Drop the rate to 90 SPS. The app withholds the score and prints why.*
-
-> At ninety samples a second, sixty-hertz wall power folds down to thirty hertz.
-> Thirty hertz is inside beta. Beta is the numerator of the focus score.
-> Hum reads as concentration, and you cannot notch it out.
-> We know the exact sample rate where our own product stops being true. We shipped the check.
-
-**THE SCORE — 0:38**
-
-*Back on. Calibrate.*
-
-> Twenty seconds of baseline. Now the score is live.
-> Beta over alpha plus theta. Pope, 1995.
-> Not theta over beta — that one goes *up* when you stop paying attention.
-> Fifty is my baseline. Not yours. Not yesterday's.
-> And it's one channel, so it cannot tell concentration from a clenched jaw. That's on the
-> screen too.
-
-**CLOSE — 0:50**
+**WHY YOU CAN BELIEVE US — 0:45**
 
 > The gap between what neurotech promises and what it delivers is a graveyard.
-> So we built the one that tells you when it doesn't know.
-> Vertex. Dry-EEG inserts for gaming headsets. Forty-nine ninety-nine. Ships Q4.
-> We're two people. We'd rather ship something true than something impressive.
+> So every spec we publish is defensible or deleted, and every demo is a real brain.
+> The proof is on the site. Go break it.
+
+**THE ASK — 0:55**
+
+> Vertex. Forty-nine ninety-nine. Ships Q4.
+> Gamers first — you'll call a fake signal in milliseconds.
+> That's exactly why we started with you.
 
 ---
 
 ## The thread
 
-**1/** Every focus tracker will give you a score right now — with the sensor sitting on the desk.
+**1/** You think faster than you can type.
 
-We built the one that refuses.
+Every interface since the typewriter has forced your mind through a straw. That's the last
+bottleneck.
+
+We're building the direct line. Today: rung one.
 
 *[video]*
 
-**2/** One dry electrode, behind the ear. Close your eyes, alpha blooms at ~10 Hz.
+**2/** Focus is a stat.
 
-Berger, 1929. The oldest result in neuroscience and the hardest to fake: right frequency, right
-latency, only when your eyes are shut.
+Not a mood. Not a vibe. A number — like aim, like APM. What gets measured gets trained.
 
-**3/** Take it off your head → `NO BIOSIGNAL — 0.3 µV RMS, below the 1.5 µV noise floor.`
+**3/** Vertex: a dry-EEG insert for the gaming headset you already own.
 
-A detached electrode collapses α+θ, so the ratio explodes. An ungated score reads that as perfect
-concentration. Ours freezes and tells you why.
+One channel, behind the ear. No gel, no cap, nothing on your forehead. One dimension of cognitive
+state, in real time.
 
-**4/** Drop to 90 SPS → `SCORE WITHHELD.`
+That's rung one. We're not pretending it's more.
 
-60 Hz mains folds to 30 Hz — inside β, the focus numerator. Hum reads as focus and it cannot be
-notched.
+**4/** The ladder:
 
-We know the rate where our own product stops being true. We shipped the check.
+→ rung 1 — one dimension of cognitive state, measured, real-time. **now**
+→ rung 2 — brain state as ambient context for machine intelligence. **bci-mcp, open source today**
+→ rung 3 — the thought-speed interface. **the point**
 
-**5/** The metric is β/(α+θ) — Pope, Bogart & Bartolome, 1995. Never θ/β; that rises with
-*in*attention.
+**5/** The gap between what neurotech promises and what it delivers is a graveyard.
 
-50 = your own baseline, frozen after 20 s. Not comparable between people.
+Every spec we publish is defensible or deleted. Every demo is a real brain.
 
-One channel. β overlaps jaw EMG. It's on the screen.
+The proof is on the site. Go break it.
 
-**6/** Vertex. Dry-EEG inserts for gaming headsets.
-$49.99. Ships Q4 2026.
+**6/** Vertex. $49.99. Ships Q4 2026.
+
+Gamers first — you'll call a fake signal in milliseconds. That's why we started with you.
 
 ---
 
-## Say these. They're the moat.
+## The one way this dies
 
-Volunteering the limits is what makes everything else believable. They're on screen anyway.
+At this altitude the demo can't hurt you. **Overclaiming the vision can.** Say "read your mind"
+once and you're every neurotech company that ever vaporized.
 
-- **One channel, around the ear.** Not Fp1. Not frontal. Not prefrontal.
-- **β overlaps jaw and neck EMG.** Clench your teeth and "focus" rises exactly as it does when you
-  concentrate. One channel cannot separate them. Demo it on purpose if you're brave.
-- **50 is your own baseline**, this session. Not comparable to mine.
-- **β/(α+θ)** — Pope, Bogart & Bartolome, 1995. Cite it.
+The ladder is the protection, and it's free: name rung one small and precise (*one* dimension,
+*one* channel, measured, now), and let the ambition live openly in rungs 2 and 3 as the future.
+Huge about the destination, exact about the rung you're on. That's the whole trick, and the
+manifesto already does it.
 
-## Never say these
+## Never say
 
-- ~~8 channels~~ — v4 is `ADS1220_MUX_0_AVSS`. **One** single-ended channel.
-- ~~250 Hz / ADS1299~~ — that's v5, which **has never been flashed on real hardware**. v4 is an
-  ADS1220 on a 20/45/90/175/330/600/1000/2000 ladder. There is no 250 on it.
-- ~~"Berger validated"~~ — not until there's a capture. Record the eyes-closed bloom tonight and
-  **you will have one.** Then say it.
+- ~~8 channels~~ — v4 is one single-ended channel.
+- ~~250 Hz / ADS1299~~ — that's v5, never flashed on real hardware. v4 is an ADS1220.
+- ~~"Berger validated"~~ — not until there's a capture. Record one and then you can say it.
 - ~~"Discord cost you 23 minutes"~~ — causation from a confound, and the number was invented.
-  Difficulty and fatigue move focus *and* make you switch tabs. Association only.
-- ~~Flow Shield muting Slack~~ — a sandboxed macOS app cannot mute another app or pause browser
-  tabs. Don't demo a capability that doesn't exist.
+- ~~Flow Shield muting Slack~~ — a sandboxed Mac app can't mute other apps or pause tabs.
+- ~~"reads your mind" / "decodes your thoughts"~~ — rung one is one number. Say one number.
 
 ## Pre-flight
 
-- [ ] `xcodebuild test -scheme neurosync -destination 'platform=macOS,arch=arm64' -only-testing:neurosyncTests` → 19/19
-- [ ] **Board on a head, streaming, at 175 SPS.** This has never been run against real hardware —
-      do it before you record, not on camera.
-- [ ] Grant Bluetooth on first Connect (the prompt fires then, not at launch)
-- [ ] Whop verified clear logged-out 2026-07-12: `whop.com/checkout/plan_6l6R2ntqVSplQ` → 308 → 200,
-      email + Pay, $49.99, no login wall. Click `/preorder` yourself once — it uses the *embedded*
-      checkout, a different code path from the hosted URL that was tested.
+- [ ] **Board on a head, streaming.** The Mac app has never been run against real hardware — do
+      that before you shoot, not on camera.
+- [ ] Whop verified clear logged-out 2026-07-12: checkout → 308 → 200, email + Pay, $49.99, no
+      login wall. Click `/preorder` yourself once; it uses the embedded checkout, a different code
+      path.
 - [ ] Raw audio. No BGM.
