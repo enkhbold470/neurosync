@@ -1,77 +1,137 @@
-# The demo to record
+# Vertex — launch script
 
-The pitch is not "our focus number goes up." Every neurotech company on earth says that, and the
-audience you chose — gamers, per Manifesto VII, *"the hardest, most honest customers alive, they'll
-call a fake signal in milliseconds"* — has been lied to by all of them.
+Read it cold. Short sentences. No adverbs. Let the screen do the proving.
 
-The pitch is: **this is the only one that tells you when it doesn't know.**
+The pitch is not "our focus number goes up." Everyone says that. The pitch is:
 
-## The 45 seconds
+> **This is the only one that tells you when it doesn't know.**
 
-**0:00–0:12 — The Berger test. This is the whole video.**
-Board on. Eyes open, look at the spectrum: broad, flat, no peak. Now close your eyes for ten
-seconds. A bump grows in the shaded 8–13 Hz band and the peak snaps to ~10 Hz. Open them: it
-collapses.
+---
 
-That is the alpha rhythm Hans Berger discovered in 1929, and it is the single hardest thing in
-consumer neurotech to fake convincingly on camera, because it has to appear *at the right
-frequency*, *with the right latency*, *only when your eyes are shut*. A `Math.random()` mockup
-cannot do it. This is Manifesto II — "if the alpha suppression isn't on the scope, it doesn't
-ship" — cashed in as your opening shot.
+## The script
 
-Say the number out loud: **"that's my alpha, at 10.3 hertz, from one dry electrode behind my ear."**
+**COLD OPEN — 0:00**
 
-**0:12–0:22 — Pull the earpad off.**
-`NO BIOSIGNAL — 0.31 µV RMS, below the 1.5 µV noise floor. The electrode is not making skin
-contact.` The score doesn't drop to zero and it doesn't spike to 100. **It refuses.**
+> This is one dry electrode. It sits behind your ear.
+> No gel. No cap. Nothing on your forehead.
+> Watch my spectrum when I close my eyes.
 
-Then say the quiet part: *"An ungated focus score reads an electrode on a desk as flawless
-concentration. Ours won't. That's the product."*
+**BERGER — 0:05**
 
-**0:22–0:32 — Drop the sample rate to 90 SPS.**
-The app refuses again, and prints why: `60 Hz mains folds to 30.0 Hz at 90 SPS and cannot be
-notched — directly inside β, the focus numerator.`
+*Eyes closed. Ten seconds. Alpha blooms in the shaded band.*
 
-This is the flex. You are telling a room full of engineers that you know the exact sample rate
-below which your own product becomes a lie, and that you shipped the check. Nobody fakes *that*.
+> That's alpha. [read the Hz off the screen.]
+> Hans Berger found it in 1929. It's the oldest result in neuroscience.
+> It's also the hardest thing to fake. It has to show up at the right frequency, the moment my
+> eyes shut, and die when they open.
 
-**0:32–0:45 — Put it back on. Calibrate. Work.**
-20 seconds of baseline, then the score. Explain what 50 means: *your* baseline, today, in this
-session — not comparable to mine, not comparable to yesterday's. Show the honesty block on screen
-while you say it, including the jaw-clench caveat.
+*Eyes open. It collapses.*
 
-## Say these, don't dodge them
+> That's a brain. Not a loading animation.
 
-They are on screen anyway, and volunteering them is what makes the rest credible:
+**REFUSAL ONE — 0:18**
 
-- **One channel, around the ear.** Not Fp1, not frontal, not prefrontal. A proof of concept
-  benchmarked against NeuroSky, scaling toward 8.
+*Take the earpad off your head.*
+
+> Point three microvolts. That's the noise floor of the chip.
+> A detached electrode reads as flawless concentration on an ungated score.
+> Ours refuses to give you a number.
+
+**REFUSAL TWO — 0:27**
+
+*Drop the rate to 90 SPS. The app withholds the score and prints why.*
+
+> At ninety samples a second, sixty-hertz wall power folds down to thirty hertz.
+> Thirty hertz is inside beta. Beta is the numerator of the focus score.
+> Hum reads as concentration, and you cannot notch it out.
+> We know the exact sample rate where our own product stops being true. We shipped the check.
+
+**THE SCORE — 0:38**
+
+*Back on. Calibrate.*
+
+> Twenty seconds of baseline. Now the score is live.
+> Beta over alpha plus theta. Pope, 1995.
+> Not theta over beta — that one goes *up* when you stop paying attention.
+> Fifty is my baseline. Not yours. Not yesterday's.
+> And it's one channel, so it cannot tell concentration from a clenched jaw. That's on the
+> screen too.
+
+**CLOSE — 0:50**
+
+> The gap between what neurotech promises and what it delivers is a graveyard.
+> So we built the one that tells you when it doesn't know.
+> Vertex. Dry-EEG inserts for gaming headsets. Forty-nine ninety-nine. Ships Q4.
+> We're two people. We'd rather ship something true than something impressive.
+
+---
+
+## The thread
+
+**1/** Every focus tracker will give you a score right now — with the sensor sitting on the desk.
+
+We built the one that refuses.
+
+*[video]*
+
+**2/** One dry electrode, behind the ear. Close your eyes, alpha blooms at ~10 Hz.
+
+Berger, 1929. The oldest result in neuroscience and the hardest to fake: right frequency, right
+latency, only when your eyes are shut.
+
+**3/** Take it off your head → `NO BIOSIGNAL — 0.3 µV RMS, below the 1.5 µV noise floor.`
+
+A detached electrode collapses α+θ, so the ratio explodes. An ungated score reads that as perfect
+concentration. Ours freezes and tells you why.
+
+**4/** Drop to 90 SPS → `SCORE WITHHELD.`
+
+60 Hz mains folds to 30 Hz — inside β, the focus numerator. Hum reads as focus and it cannot be
+notched.
+
+We know the rate where our own product stops being true. We shipped the check.
+
+**5/** The metric is β/(α+θ) — Pope, Bogart & Bartolome, 1995. Never θ/β; that rises with
+*in*attention.
+
+50 = your own baseline, frozen after 20 s. Not comparable between people.
+
+One channel. β overlaps jaw EMG. It's on the screen.
+
+**6/** Vertex. Dry-EEG inserts for gaming headsets.
+$49.99. Ships Q4 2026.
+
+---
+
+## Say these. They're the moat.
+
+Volunteering the limits is what makes everything else believable. They're on screen anyway.
+
+- **One channel, around the ear.** Not Fp1. Not frontal. Not prefrontal.
 - **β overlaps jaw and neck EMG.** Clench your teeth and "focus" rises exactly as it does when you
-  concentrate. One channel cannot separate them. Demo it on purpose if you're feeling brave.
-- **It's β/(α+θ)** — Pope, Bogart & Bartolome, 1995. Not θ/β. Cite it.
-- **50 = your own baseline.** The number is not comparable between people.
+  concentrate. One channel cannot separate them. Demo it on purpose if you're brave.
+- **50 is your own baseline**, this session. Not comparable to mine.
+- **β/(α+θ)** — Pope, Bogart & Bartolome, 1995. Cite it.
 
-## Do not say
+## Never say these
 
-- ~~8 channels~~ — v4 is `ADS1220_MUX_0_AVSS`: **one** single-ended channel.
-- ~~250 Hz / ADS1299~~ — that's v5, which **has never been flashed on real hardware**. v4 ships an
+- ~~8 channels~~ — v4 is `ADS1220_MUX_0_AVSS`. **One** single-ended channel.
+- ~~250 Hz / ADS1299~~ — that's v5, which **has never been flashed on real hardware**. v4 is an
   ADS1220 on a 20/45/90/175/330/600/1000/2000 ladder. There is no 250 on it.
-- ~~"Berger validated"~~ — not until there's a real capture. After tonight, if you record the eyes-
-  closed bloom, **you will have one.** Then you can say it.
-- ~~"-23 min recovery" / "Discord cost you 23 minutes"~~ — that's causation from a confound, and the
-  number was invented. Difficulty, fatigue and time-of-day all move focus *and* make you switch
-  tabs. Association only.
+- ~~"Berger validated"~~ — not until there's a capture. Record the eyes-closed bloom tonight and
+  **you will have one.** Then say it.
+- ~~"Discord cost you 23 minutes"~~ — causation from a confound, and the number was invented.
+  Difficulty and fatigue move focus *and* make you switch tabs. Association only.
 - ~~Flow Shield muting Slack~~ — a sandboxed macOS app cannot mute another app or pause browser
   tabs. Don't demo a capability that doesn't exist.
 
-## Before you hit record
+## Pre-flight
 
 - [ ] `xcodebuild test -scheme neurosync -destination 'platform=macOS,arch=arm64' -only-testing:neurosyncTests` → 19/19
-- [ ] Board charged, on a head, streaming at **175 SPS** (the app's rate picker greys out the rest
-      and tells you why)
-- [ ] Grant Bluetooth on first Connect (the prompt appears then, not at launch)
-- [ ] Whop funnel: verified clear logged-out on 2026-07-12 —
-      `whop.com/checkout/plan_6l6R2ntqVSplQ` → 308 → 200, email + Pay, $49.99, no login wall.
-      Click it once yourself in a private window anyway; the `/preorder` page uses the *embedded*
-      checkout, which is a different code path from the hosted URL that was tested.
-- [ ] Audio raw. No BGM.
+- [ ] **Board on a head, streaming, at 175 SPS.** This has never been run against real hardware —
+      do it before you record, not on camera.
+- [ ] Grant Bluetooth on first Connect (the prompt fires then, not at launch)
+- [ ] Whop verified clear logged-out 2026-07-12: `whop.com/checkout/plan_6l6R2ntqVSplQ` → 308 → 200,
+      email + Pay, $49.99, no login wall. Click `/preorder` yourself once — it uses the *embedded*
+      checkout, a different code path from the hosted URL that was tested.
+- [ ] Raw audio. No BGM.
