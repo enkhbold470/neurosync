@@ -33,9 +33,11 @@ That compromise holds only because of the wall, and the wall is not optional:
 
 - Generated records carry `synthetic: true`, are named `SYNTHETIC--*.json` on disk, and are refused
   by `Store.write` if they lack a provenance note.
-- Every UI surface that renders one goes through `.syntheticWatermark(_:)` — a hatch plus a fixed
-  `SYNTHETIC — GENERATED, NOT MEASURED` banner, applied at the *root* of the day so no panel inside
-  it can escape.
+- Every UI surface that renders one goes through `.syntheticWatermark(_:)` — a diagonal hatch and an
+  amber border, applied at the *root* of the day so no panel inside it can escape, plus a `SYNTHETIC`
+  badge on the day-selector tab. (The loud full-width banner was removed at the owner's request on
+  2026-07-14; they take on verbal disclosure. The data-level flags below are the real guarantee and
+  are untouched.)
 - Synthetic data may never reach the menu bar, the live gauge, or any aggregate mixed with real
   sessions. `menuBarNeverReadsPersistedData` pins this.
 - Generation is never implicit. No first-run seeding, no empty-state auto-fill.
