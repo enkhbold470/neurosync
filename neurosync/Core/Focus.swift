@@ -83,6 +83,14 @@ nonisolated func focusFeasibility(fs: Double, line: Double = 60) -> FocusFeasibi
 /// The flow line. Above this the session is "in flow" — relative to YOUR baseline, not anyone else's.
 nonisolated let flowThreshold = 60.0
 
+/// Median, not mean: robust to the blink and movement spikes that survive a 20 s window.
+nonisolated func median(_ xs: [Double]) -> Double {
+    guard !xs.isEmpty else { return 0 }
+    let sorted = xs.sorted()
+    let mid = sorted.count >> 1
+    return sorted.count % 2 == 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+}
+
 nonisolated struct FocusMetrics: Sendable {
     /// Raw Pope engagement index, beta/(alpha+theta). Unbounded, > 0. Ungated.
     var engagement: Double = 0
@@ -90,6 +98,16 @@ nonisolated struct FocusMetrics: Sendable {
     var focus: Double = 0
     /// 0..100 alpha share of theta+alpha+beta. A relaxation cue, NOT `100 - focus`.
     var calm: Double = 0
+    /// 0..100 jaw/temporalis EMG load. 50 == this user's own frozen resting jaw.
+    ///
+    /// This is an ARTIFACT INDICATOR, not a cortical measure. 30–45 Hz at an around-ear electrode is
+    /// temporalis EMG, not gamma. It is surfaced rather than hidden because it is the exact confound
+    /// that makes beta — and therefore focus — untrustworthy: clenching your teeth raises the
+    /// engagement index exactly as concentrating does, and one channel cannot separate them.
+    /// A high clench reading means "the focus number in this window is contaminated".
+    var clench: Double = 0
+    /// Gamma share of the active bands, ungated. The raw quantity behind `clench`.
+    var gammaShare: Double = 0
     var blinks: Int = 0
     /// µV²/Hz, integrated over each band.
     var bands: BandPowers = [:]
@@ -105,10 +123,15 @@ nonisolated struct FocusMetrics: Sendable {
     var calibrating: Bool = true
     var calibrationLeftSec: Double = 0
     var baseline: Double?
+    /// The frozen resting-jaw gamma share. Nil while calibrating, exactly like `baseline`.
+    var clenchBaseline: Double?
     var fsOk: Bool = true
     var fsReason: String?
 
-    var inFlow: Bool { !calibrating && fsOk && signalOk && focus >= flowThreshold }
+    /// Every gate open. The one predicate that says "this score may be shown, stored, or counted".
+    var trustworthy: Bool { signalOk && fsOk && !calibrating && !warmingUp }
+
+    var inFlow: Bool { trustworthy && focus >= flowThreshold }
 }
 
 // MARK: - Engine
@@ -155,9 +178,16 @@ nonisolated final class FocusEngine {
     private var calSamples: [Double] = []
     private let calNeeded: Int
 
+    /// The resting-jaw gamma share, frozen alongside the engagement baseline and by the same rule:
+    /// median of the gated calibration window, then never touched again.
+    private var clenchBaseline: Double?
+    private var calClench: [Double] = []
+
     private var scoreEma = 0.0
     private var scorePrimed = false
     private var calmEma = 0.0
+    private var clenchEma = 0.0
+    private var clenchPrimed = false
 
     private var emaSq = 0.0
     private var refractory = 0
@@ -243,8 +273,13 @@ nonisolated final class FocusEngine {
         let theta = bands[.theta] ?? 0
         let alpha = bands[.alpha] ?? 0
         let beta = bands[.beta] ?? 0
+        let gamma = bands[.gamma] ?? 0
 
         let engagement = beta / max(denomFloor, alpha + theta)
+
+        // 30–45 Hz at an earpad is temporalis EMG, not cortical gamma. Its share of the active
+        // bands is the jaw-clench tell — and the reason a high focus number can be a lie.
+        let gammaShare = gamma / max(denomFloor, theta + alpha + beta + gamma)
 
         let k = opts.smoothing
         let active = theta + alpha + beta
@@ -256,20 +291,24 @@ nonisolated final class FocusEngine {
         if signalOk && feasibility.ok {
             if baseline == nil {
                 calSamples.append(engagement)
+                calClench.append(gammaShare)
                 if calSamples.count >= calNeeded {
                     // Median, not mean: robust to the blink and movement spikes that
                     // survive a 20 s window.
-                    let sorted = calSamples.sorted()
-                    let mid = sorted.count >> 1
-                    baseline = sorted.count % 2 == 1
-                        ? sorted[mid]
-                        : (sorted[mid - 1] + sorted[mid]) / 2
+                    baseline = median(calSamples)
+                    clenchBaseline = median(calClench)
                 }
             } else {
                 let s = scoreFor(engagement, baseline!)
                 // Prime on the first real reading so the score doesn't crawl up from 0.
                 scoreEma = scorePrimed ? scoreEma * k + s * (1 - k) : s
                 scorePrimed = true
+
+                if let g0 = clenchBaseline {
+                    let c = scoreFor(gammaShare, g0)
+                    clenchEma = clenchPrimed ? clenchEma * k + c * (1 - k) : c
+                    clenchPrimed = true
+                }
             }
         }
         // When signal is lost the score is NOT updated — it freezes at its last good
@@ -280,6 +319,9 @@ nonisolated final class FocusEngine {
         metrics.engagement = engagement
         metrics.focus = (calibrating || !feasibility.ok) ? 0 : scoreEma
         metrics.calm = min(100, calmEma * 160)
+        metrics.gammaShare = gammaShare
+        metrics.clench = (calibrating || !feasibility.ok) ? 0 : clenchEma
+        metrics.clenchBaseline = clenchBaseline
         metrics.bands = bands
         metrics.alphaPeak = peakFreq(p.freqs, p.psd, 6, 14)
         metrics.rmsUv = rmsUv
@@ -296,11 +338,16 @@ nonisolated final class FocusEngine {
     /// Drop the baseline and start calibration over.
     func recalibrate() {
         baseline = opts.baselineEngagement
+        clenchBaseline = nil
         calSamples.removeAll()
+        calClench.removeAll()
         scoreEma = 0
         scorePrimed = false
+        clenchEma = 0
+        clenchPrimed = false
         metrics.calibrating = baseline == nil
         metrics.calibrationLeftSec = opts.calibrationSec
         metrics.baseline = baseline
+        metrics.clenchBaseline = nil
     }
 }

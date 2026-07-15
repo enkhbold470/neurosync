@@ -5,25 +5,38 @@
 //  NeuroSync — the macOS instrument for the NeuroFocus Vertex v4 insert.
 //
 //  There is no demo mode and no sample data. With no board on a head this window shows a flat
-//  line and says so. That is not a missing feature; it is the whole claim.
+//  line and says so. That is not a missing feature; it is the whole eclaim.
 //    — Manifesto II: "Every demo is a real brain, in real time. No simulations dressed as data."
 //
 
 import SwiftUI
 
+enum Surface: String, CaseIterable {
+    case live = "LIVE"
+    case day = "DAY"
+}
+
 struct ContentView: View {
     /// Injected by the App so the window and the menu bar share one source of truth.
     let model: VertexModel
+    let days: DayModel
+
+    @State private var surface: Surface = .live
 
     var body: some View {
         VStack(spacing: 0) {
-            Header(model: model)
+            Header(model: model, days: days, surface: $surface)
 
             Group {
-                if model.isConnected {
-                    Instrument(model: model)
-                } else {
-                    ConnectView(model: model)
+                switch surface {
+                case .live:
+                    if model.isConnected {
+                        Instrument(model: model)
+                    } else {
+                        ConnectView(model: model)
+                    }
+                case .day:
+                    DayView(model: days)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -31,8 +44,15 @@ struct ContentView: View {
             SpecStrip(snap: model.snap)
         }
         .background(Ink.bg)
-        .frame(minWidth: 1040, minHeight: 700)
+        .frame(minWidth: 1120, minHeight: 760)
         .preferredColorScheme(.dark)
+        .task {
+            // The live model records through the SAME store the Day view reads. It is handed over
+            // here rather than constructed inside VertexModel, so the link has no way to reach the
+            // filesystem on its own.
+            model.store = days.store
+            model.onSessionWritten = { days.load() }
+        }
     }
 }
 
@@ -40,6 +60,8 @@ struct ContentView: View {
 
 private struct Header: View {
     let model: VertexModel
+    let days: DayModel
+    @Binding var surface: Surface
 
     var body: some View {
         HStack(spacing: 14) {
@@ -53,7 +75,15 @@ private struct Header: View {
                 .tracking(1.2)
                 .foregroundStyle(Ink.muted)
 
+            SurfacePicker(surface: $surface)
+
             Spacer()
+
+            // Self-report. The ONLY place stress and anxiety enter this app — you say them, the
+            // instrument records that you said them, and nothing pretends to have measured them.
+            if surface == .live {
+                MarkerRow(model: model, days: days)
+            }
 
             if model.isConnected, let info = model.snap.info {
                 RatePicker(current: info.sps) { model.setRate(index: $0) }
@@ -70,6 +100,59 @@ private struct Header: View {
         .padding(.vertical, 12)
         .background(Ink.bg)
         .overlay(Rectangle().frame(height: 1).foregroundStyle(Ink.rule), alignment: .bottom)
+    }
+}
+
+private struct SurfacePicker: View {
+    @Binding var surface: Surface
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(Surface.allCases, id: \.self) { s in
+                Button {
+                    surface = s
+                } label: {
+                    Text(s.rawValue)
+                        .font(.data(9, surface == s ? .bold : .regular))
+                        .tracking(1.2)
+                        .foregroundStyle(surface == s ? Ink.bg : Ink.dim)
+                        .frame(width: 48, height: 22)
+                        .background(surface == s ? Ink.amber : Color.clear)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .overlay(Rectangle().strokeBorder(Ink.rule, lineWidth: 1))
+    }
+}
+
+/// One tap per feeling. Written to markers.jsonl with `source: "self-reported"`, and into the live
+/// session record if one is open.
+private struct MarkerRow: View {
+    let model: VertexModel
+    let days: DayModel
+
+    private let kinds: [MarkerKind] = [.stressed, .anxious, .breakTaken, .walk, .coffee]
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(kinds, id: \.self) { k in
+                Button {
+                    model.mark(k)
+                    days.load()
+                } label: {
+                    Image(systemName: k.glyph)
+                        .font(.system(size: 10))
+                        .foregroundStyle(Ink.dim)
+                        .frame(width: 26, height: 22)
+                }
+                .buttonStyle(.plain)
+                .help("Log \(k.label.lowercased()) — self-reported, and recorded as such. One around-ear channel cannot measure stress or anxiety, so this is you telling the instrument, not the instrument telling you.")
+            }
+        }
+        .overlay(Rectangle().strokeBorder(Ink.rule, lineWidth: 1))
+        .disabled(!days.hasLocation)
+        .opacity(days.hasLocation ? 1 : 0.35)
     }
 }
 
@@ -281,5 +364,5 @@ private struct Instrument: View {
 }
 
 #Preview {
-    ContentView(model: VertexModel())
+    ContentView(model: VertexModel(), days: DayModel())
 }

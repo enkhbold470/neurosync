@@ -19,12 +19,49 @@ final class VertexModel {
 
     private let link = VertexLink()
 
+    // MARK: Recording
+    //
+    // A live session records itself to disk as it goes. The epochs are built from the LINK's engine
+    // — the same one feeding the window — so the JSON and the screen can never disagree.
+    //
+    // `store` is set by the App. When it is nil (no folder granted), nothing is recorded and nothing
+    // is lost: the instrument still works, it just does not keep a diary.
+
+    var store: Store?
+    private let watcher = ActivityWatcher()
+
+    private var recStart: Date?
+    private var recBuilder = EpochBuilder()
+    private var recEpochs: [Epoch] = []
+    private var recMarkers: [Marker] = []
+    private var recTick: Timer?
+    private var lastSecond = -1
+
+    /// Fires when a session is sealed, so the Day view can reload.
+    var onSessionWritten: (() -> Void)?
+
+    var isRecording: Bool { recStart != nil }
+
     init() {
         link.onState = { [weak self] s in
-            Task { @MainActor in self?.state = s }
+            Task { @MainActor in self?.handle(state: s) }
         }
         link.onSnapshot = { [weak self] s in
             Task { @MainActor in self?.ingest(s) }
+        }
+    }
+
+    private func handle(state s: LinkState) {
+        let was = state
+        state = s
+
+        switch s {
+        case .streaming where !isRecording:
+            beginRecording()
+        case .idle, .failed, .bluetoothOff, .unauthorized:
+            if was == .streaming || isRecording { endRecording() }
+        default:
+            break
         }
     }
 
@@ -41,6 +78,85 @@ final class VertexModel {
             focusHistory.append(s.metrics.focus)
             if focusHistory.count > Self.historyCap { focusHistory.removeFirst() }
         }
+    }
+
+    // MARK: Recording lifecycle
+
+    private func beginRecording() {
+        guard store != nil else { return }
+        recStart = Date()
+        recEpochs = []
+        recMarkers = []
+        recBuilder = EpochBuilder()
+        lastSecond = -1
+        watcher.begin()
+
+        let t = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+            MainActor.assumeIsolated { self.tick() }
+        }
+        RunLoop.main.add(t, forMode: .common)
+        recTick = t
+    }
+
+    /// One epoch per wall-clock second, from whatever the link's engine last computed.
+    private func tick() {
+        guard let recStart else { return }
+        let sec = Int(Date().timeIntervalSince(recStart))
+        guard sec > lastSecond else { return }
+        lastSecond = sec
+
+        // Was this second inside a block you meant to concentrate in? The EEG cannot know — see
+        // `resolveState`. Only the calendar and the frontmost app can, so they are asked.
+        let now = recStart.addingTimeInterval(Double(sec))
+        let effortful = watcher.spans(until: now.addingTimeInterval(1))
+            .contains { $0.kind.isEffortful && $0.contains(now) }
+
+        recEpochs.append(recBuilder.close(
+            second: Double(sec), metrics: snap.metrics, effortful: effortful))
+    }
+
+    private func endRecording() {
+        recTick?.invalidate()
+        recTick = nil
+        watcher.end()
+
+        defer {
+            recStart = nil
+            recEpochs = []
+            recMarkers = []
+        }
+
+        guard let store, let recStart, recEpochs.count >= 30 else { return }
+
+        let rec = SessionRecord(
+            synthetic: false,
+            syntheticNote: nil,
+            startedAt: recStart,
+            endedAt: recStart.addingTimeInterval(Double(recEpochs.count)),
+            device: DeviceInfo(
+                name: snap.info?.name ?? Vertex.deviceName,
+                sps: snap.info?.sps ?? Int(snap.fs),
+                firmware: snap.info?.fw
+            ),
+            baseline: snap.metrics.baseline.map {
+                BaselineInfo(engagement: $0, clench: snap.metrics.clenchBaseline,
+                             frozenAt: recStart.addingTimeInterval(20), reused: false)
+            },
+            epochs: recEpochs,
+            activities: watcher.spans(),
+            markers: recMarkers
+        )
+
+        try? store.write(rec)
+        onSessionWritten?()
+    }
+
+    /// A self-reported marker during a live session. Kept in the record AND appended to
+    /// markers.jsonl, so it survives even if the session never seals.
+    func mark(_ kind: MarkerKind, note: String? = nil) {
+        let m = Marker(kind: kind, at: Date(), note: note)
+        if isRecording { recMarkers.append(m) }
+        try? store?.append(m)
     }
 
     // MARK: Intents

@@ -16,13 +16,49 @@ binding here** — this repo is one of the four places they must stay true. Read
 > **Manifesto II — Real signal or nothing.** "Every demo is a real brain, in real time. No
 > simulations dressed as data. If the alpha suppression isn't on the scope, it doesn't ship."
 
-**There is no demo mode, no sample data, and no signal generator in this app, and none may be
-added.** With no board on a head, the window shows a flat line and says `NO DEVICE`. Every number
-on screen is measured or it is not shown. If you are ever tempted to add a fake data source "just
-for the demo video" — that is the exact thing this codebase exists to refuse.
+**No fabricated NUMBER may ever reach a surface.** With no board on a head, the LIVE window shows a
+flat line and says `NO DEVICE`. Every number on screen is measured, or computed by the DSP from a
+signal, or it is not shown. If you are tempted to type in a focus score, ease one toward a value
+that flatters the product, or curve one for a demo video — that is the thing this codebase exists to
+refuse, and it has no legitimate form.
 
-The only synthetic waveforms in the repo are **test fixtures** (`neurosyncTests/`), which feed the
-real DSP to pin its behavior. They are inputs, never outputs.
+**Amended 2026-07-14.** The rule used to read "no signal generator in this app, and none may be
+added." `Synthetic/` is now one, so the rule has been made precise rather than quietly broken. What
+is forbidden is a fabricated *score*. What `Synthetic/` makes is a fabricated *voltage* — raw ADC
+counts, which go through the same `FocusEngine`, the same three gates and the same state machine as
+a real board's, and come out the far side as numbers the DSP computed. The generator has no channel
+through which to say "focus was 72", and it must never acquire one.
+
+That compromise holds only because of the wall, and the wall is not optional:
+
+- Generated records carry `synthetic: true`, are named `SYNTHETIC--*.json` on disk, and are refused
+  by `Store.write` if they lack a provenance note.
+- Every UI surface that renders one goes through `.syntheticWatermark(_:)` — a diagonal hatch and an
+  amber border, applied at the *root* of the day so no panel inside it can escape, plus a `SYNTHETIC`
+  badge on the day-selector tab. (The loud full-width banner was removed at the owner's request on
+  2026-07-14; they take on verbal disclosure. The data-level flags below are the real guarantee and
+  are untouched.)
+- Synthetic data may never reach the menu bar, the live gauge, or any aggregate mixed with real
+  sessions. `menuBarNeverReadsPersistedData` pins this.
+- Generation is never implicit. No first-run seeding, no empty-state auto-fill.
+
+If you remove the watermark, you have broken Manifesto II and you must say so out loud. The honest
+move at that point is to delete this section, not to keep it while contradicting it.
+
+Test fixtures in `neurosyncTests/` remain what they always were: inputs to the real DSP, never
+outputs.
+
+### The second rule: say what the hardware can measure, and nothing more
+
+One around-ear dry channel measures **focus** (Pope), **calm** (α share) and **clench** (jaw EMG).
+It does **not** measure stress or anxiety, and no amount of DSP will make it. Those are
+*self-reported markers* — you press a key, and the app records that you pressed it. See
+`Context/Activity.swift`.
+
+Likewise **frontal midline theta cannot be read from an earpad.** FMθ is the best-validated
+cognitive-effort marker in the literature and it is sourced to anterior cingulate, read at Fz. The
+`COGNITIVE STRAIN` and `MENTAL RECOVERY` panels are labelled `PROXY` because they are proxies. The
+`BRAIN AGE` panel ships **empty**, on purpose, and says why.
 
 ## Commands
 
@@ -39,6 +75,11 @@ xcodebuild test -scheme neurosync -destination 'platform=macOS,arch=arm64' -only
 # matches nothing and xcodebuild still exits 0, so you get a green run that ran no tests.
 xcodebuild test -scheme neurosync -destination 'platform=macOS,arch=arm64' \
   '-only-testing:neurosyncTests/detachedElectrodeNeverReadsAsHighFocus()'
+
+# Two watermarked synthetic days, for designing the DAY view without hardware. Waveforms are
+# generated; every score is computed by the real DSP. Needs a granted data folder (see below).
+# This is an explicit opt-in command — it is NEVER run on launch or to fill an empty view.
+/path/to/neurosync.app/Contents/MacOS/neurosync --generate-synthetic
 ```
 
 **Seeing the UI without hardware:** the snapshot tests (`neurosyncTests/Snapshots.swift`) render
@@ -52,13 +93,36 @@ needed. They land in the app's sandbox container:
 BLE/VertexProtocol.swift   wire contract — UUIDs, frame decode, INFO/DIAG parse, rate ladder
 BLE/VertexLink.swift       CoreBluetooth central + DSP, on its own serial queue (nonisolated)
 Core/DSP.swift             biquads, filter chain, Welch PSD, band powers, counts→µV
-Core/Focus.swift           Pope index, the frozen baseline, and the three gates
-App/VertexModel.swift      @MainActor @Observable view state; owns the link, no DSP of its own
-UI/                        Theme, Scope/Spectrum/Sparkline canvases, Panels
+Core/Focus.swift           Pope index, the frozen baseline, focus + calm + CLENCH, the three gates
+Core/BrainState.swift      focused/daydream/calm/clenched/withheld, dwell hysteresis (nonisolated)
+Core/Gate.swift            which refusal is blocking a score; what the menu bar may say
+Context/Activity.swift     activity + marker taxonomy, bundle/calendar classifiers, coalescing
+Context/ActivityWatcher.swift  live EventKit (read-only) + frontmost-app (bundle id only) sources
+Data/SessionRecord.swift   the on-disk JSON schema; a null score means "withheld", never zero
+Data/Recorder.swift        counts→1 Hz epochs (EpochBuilder), shared by live + synthetic paths
+Data/Store.swift           ~/Desktop/neurosync-local/, sandbox routes, the synthetic filename wall
+Data/DayRollup.swift       segments, the findings engine, the labelled proxies
+Synthetic/                 waveform generator + the two scripted days + the --generate-synthetic CLI
+App/VertexModel.swift      @MainActor view state; owns the link + live recording, no DSP of its own
+App/DayModel.swift         @MainActor state for the DAY view; owns the Store
+UI/                        Theme, Scope/Spectrum canvases, Panels, DayRibbon, DayView, Watermark
 ```
 
 Signal flows one way: `CoreBluetooth → decode → FocusEngine → snapshot → @MainActor`. The link
-never touches the UI; the model never touches the radio or the DSP.
+never touches the UI; the model never touches the radio or the DSP. The DAY view is a second surface
+over persisted `SessionRecord`s; it shares the `EpochBuilder`/`FocusEngine` with the live path so the
+JSON on disk can never disagree with the window it was recorded from. The menu bar reads the live
+model and ONLY the live model — persisted data, synthetic or real, has no path to it.
+
+### The daydream is context, not signal — read this before touching `resolveState`
+
+`resolveState(_:effortful:)` takes a Bool the EEG cannot supply. **Alpha-up disengagement is the
+same spectrum whether you daydreamed at the compiler or rested on a walk** — one channel does not
+know which. What separates `.daydream` from `.calm` is whether you were *supposed* to be
+concentrating, and that is a calendar/app fact, passed in by the caller. This is deliberate: it means
+the app can never claim to have *detected* mind-wandering from the signal alone, because the signature
+it would need does not exist. Do not "fix" this by inferring `effortful` from the brain state — that
+makes every finding circular.
 
 ### The three gates are the product
 

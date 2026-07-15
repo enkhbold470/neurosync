@@ -24,6 +24,43 @@ enum Ink {
     /// The one non-amber signal colour, used only to mark a withheld/failed gate.
     /// It is a warning, not decoration.
     static let warn = Color(red: 0.859, green: 0.463, blue: 0.408)
+
+    /// The day-timeline state palette. Desaturated on purpose — this is a lane on an instrument,
+    /// not a productivity app's mood ring. Amber is still the only saturated colour, and it is
+    /// still reserved for the one thing worth reading: engagement.
+    static func state(_ s: BrainState) -> Color {
+        switch s {
+        case .focused: return amber
+        case .daydream: return Color(red: 0.478, green: 0.494, blue: 0.667)   // cool slate-violet
+        case .calm: return Color(red: 0.416, green: 0.545, blue: 0.545)       // muted teal
+        case .clenched: return warn
+        case .neutral: return Color(red: 0.290, green: 0.286, blue: 0.318)
+        case .withheld: return Color.white.opacity(0.05)
+        }
+    }
+
+    static func activity(_ k: ActivityKind) -> Color {
+        switch k {
+        case .coding: return Color(red: 0.945, green: 0.698, blue: 0.478).opacity(0.55)
+        case .design: return Color(red: 0.588, green: 0.545, blue: 0.741).opacity(0.55)
+        case .meeting: return Color(red: 0.416, green: 0.588, blue: 0.647).opacity(0.55)
+        case .onCall: return Color(red: 0.859, green: 0.463, blue: 0.408).opacity(0.5)
+        case .comms: return Color(red: 0.478, green: 0.522, blue: 0.478).opacity(0.5)
+        case .reading: return Color(red: 0.596, green: 0.612, blue: 0.522).opacity(0.5)
+        case .browsing: return Color.white.opacity(0.12)
+        case .breakTime, .walk: return Color(red: 0.416, green: 0.545, blue: 0.545).opacity(0.45)
+        case .unknown: return Color.white.opacity(0.08)
+        }
+    }
+
+    static func tone(_ t: FindingTone) -> Color {
+        switch t {
+        case .bad: return warn
+        case .good: return amber
+        case .caution: return Color(red: 0.792, green: 0.678, blue: 0.443)
+        case .neutral: return dim
+        }
+    }
 }
 
 extension Font {
