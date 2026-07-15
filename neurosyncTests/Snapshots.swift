@@ -85,7 +85,7 @@ private func fixture() -> (FocusMetrics, [Double]) {
 @MainActor
 @Test func snapshotNoDevice() throws {
     // 100% real: this is exactly what the app shows with no board. No fixture involved.
-    let path = try render(ContentView(model: VertexModel()),
+    let path = try render(ContentView(model: VertexModel(), days: DayModel()),
                           size: CGSize(width: 1180, height: 760), to: "01-no-device.png")
     print("SNAPSHOT \(path)")
     #expect(FileManager.default.fileExists(atPath: path))
@@ -169,4 +169,68 @@ private func fixture() -> (FocusMetrics, [Double]) {
                           size: CGSize(width: 280, height: 190), to: "04-menubar.png")
     print("SNAPSHOT \(path)")
     #expect(FileManager.default.fileExists(atPath: path))
+}
+
+/// The DAY view, populated. Proves the timeline Canvas, the state runs, the withheld gaps, the
+/// findings layout and the synthetic watermark all compose and render — the visual counterpart to
+/// the data-level tests in DayTests. The signal behind it is a fixture through the real DSP.
+@MainActor
+@Test func snapshotDayTimeline() throws {
+    let day = snapshotFixtureDay()
+
+    // No ScrollView: ImageRenderer renders a ScrollView's scroll axis as empty. A fixed VStack lets
+    // DayRibbon's internal GeometryReader read a real width.
+    let view = VStack(alignment: .leading, spacing: 14) {
+        Panel(title: "TIMELINE", trailing: String(format: "%.0f%% coverage · 1 session", day.coverage * 100)) {
+            DayRibbon(day: day)
+        }
+        Panel(title: "FINDINGS", trailing: "\(day.findings.count)") {
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(day.findings) { f in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(f.headline).font(.label(12, .semibold)).foregroundStyle(Ink.text)
+                        Text(f.caveat).font(.label(11)).foregroundStyle(Ink.muted)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        Spacer(minLength: 0)
+    }
+    .padding(14)
+    .frame(width: 1120, height: 820, alignment: .top)
+    .syntheticWatermark(day.synthetic)
+    .background(Ink.bg)
+
+    let path = try render(view, size: CGSize(width: 1120, height: 820), to: "05-day-timeline.png")
+    print("SNAPSHOT \(path)")
+    #expect(day.synthetic)
+    #expect(!day.findings.isEmpty)
+}
+
+/// A short real session through the real DSP, rolled up — enough to populate the timeline snapshot
+/// without generating the full two days.
+@MainActor
+private func snapshotFixtureDay() -> Day {
+    let fs = 175.0
+    let start = Date(timeIntervalSince1970: 1_700_000_000)
+    let blocks = [
+        SynthBlock(startSec: 0, durationSec: 40, profile: .baseline, rampSec: 0),
+        SynthBlock(startSec: 40, durationSec: 150, profile: .focused, rampSec: 15),
+        SynthBlock(startSec: 190, durationSec: 60, profile: .off, rampSec: 0),
+        SynthBlock(startSec: 250, durationSec: 190, profile: .disengaged, rampSec: 20)
+    ]
+    let counts = synthesizeCounts(blocks: blocks, fs: fs, durationSec: 440, seed: 0xD00D)
+    let span = ActivitySpan(kind: .coding, label: "Claude coding", start: start,
+                            end: start.addingTimeInterval(440), source: .appWatch,
+                            bundleId: "com.anthropic.claude")
+    let rec = SessionRecorder(fs: fs, effortfulAt: { _ in true })
+    for c in counts { rec.push(counts: c) }
+    let session = rec.finish(
+        startedAt: start,
+        device: DeviceInfo(name: Vertex.deviceName, sps: Int(fs), firmware: "v4"),
+        activities: [span],
+        markers: [Marker(kind: .stressed, at: start.addingTimeInterval(300), note: "stuck")],
+        synthetic: true, syntheticNote: syntheticNote)
+    return rollUp(sessions: [session], markers: session.markers, date: start)
 }

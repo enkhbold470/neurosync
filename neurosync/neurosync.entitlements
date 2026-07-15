@@ -8,5 +8,28 @@
 	     time: CBCentralManager reports .unauthorized and no board is ever discovered. -->
 	<key>com.apple.security.device.bluetooth</key>
 	<true/>
+
+	<!-- The Day view writes plain JSON to ~/Desktop/neurosync-local/. The sandbox does not hand
+	     out the Desktop, so there are two routes and Store.swift tries them in this order:
+
+	       1. This temporary exception, scoped to the one folder. Silent, no panel.
+	       2. If it is not honoured at runtime (an unsigned build, a hardened profile), an
+	          NSOpenPanel and a security-scoped bookmark.
+
+	     Route 1 can only be probed by WRITING — sandbox denial surfaces as a thrown error at the
+	     first write, never as a queryable capability. Store.tryPreferredRoot does exactly that. -->
+	<key>com.apple.security.temporary-exception.files.home-relative-path.read-write</key>
+	<array>
+		<string>/Desktop/neurosync-local/</string>
+	</array>
+
+	<!-- Route 2's landing pad: whatever folder the user grants in the panel. -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+
+	<!-- EventKit. Google Calendar syncs into macOS Calendar, so real meetings and on-call blocks
+	     arrive with no OAuth and no API key. Read-only: NeuroSync never writes an event. -->
+	<key>com.apple.security.personal-information.calendars</key>
+	<true/>
 </dict>
 </plist>

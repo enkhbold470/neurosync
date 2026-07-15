@@ -405,6 +405,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "NeuroSync connects to your NeuroFocus Vertex EEG insert over Bluetooth to read its signal.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "NeuroSync reads your calendar so the Day view can show what you were doing while it was measuring. Read-only — it never creates, edits or deletes an event.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -439,6 +440,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "NeuroSync connects to your NeuroFocus Vertex EEG insert over Bluetooth to read its signal.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "NeuroSync reads your calendar so the Day view can show what you were doing while it was measuring. Read-only — it never creates, edits or deletes an event.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
