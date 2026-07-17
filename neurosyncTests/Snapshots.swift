@@ -207,6 +207,60 @@ private func fixture() -> (FocusMetrics, [Double]) {
     #expect(!day.findings.isEmpty)
 }
 
+/// The new visual layer — icon chips, metric meters, ring gauges — over fixture data, so the
+/// glanceable DAY view can be reviewed without hardware.
+@MainActor
+@Test func snapshotDayVisuals() throws {
+    let day = snapshotFixtureDay()
+    let seg = day.segments.first!
+
+    func metric(_ label: String, _ display: String, _ v: Double, _ tint: Color, baseline: Double? = nil) -> MetricCell {
+        MetricCell(label: label, display: display, value: v, tint: tint, baseline: baseline)
+    }
+
+    let blockRow = HStack(alignment: .center, spacing: 14) {
+        IconChip(system: seg.span.kind.icon, tint: Ink.activity(seg.span.kind), size: 34)
+        VStack(alignment: .leading, spacing: 2) {
+            Text(seg.span.label).font(.label(14, .semibold)).foregroundStyle(Ink.text)
+            Text("\(seg.span.kind.label) · \(clock(seg.span.start))–\(clock(seg.span.end))")
+                .font(.data(11)).foregroundStyle(Ink.muted)
+        }
+        .frame(width: 244, alignment: .leading)
+        Spacer(minLength: 0)
+        metric("FOCUS", String(format: "%.0f", seg.medianFocus ?? 0), (seg.medianFocus ?? 0) / 100, Ink.amber, baseline: 0.5)
+        metric("FLOW", "\(Int(seg.share(.focused) * 100))%", seg.share(.focused), Ink.amber)
+        metric("DAYDREAM", "\(Int(seg.share(.daydream) * 100))%", seg.share(.daydream), Ink.state(.daydream))
+        metric("COVERAGE", "\(Int(seg.coverage * 100))%", seg.coverage, Ink.dim)
+    }
+    .padding(.vertical, 10)
+
+    let gauges = HStack(spacing: 24) {
+        RingGauge(value: (day.cognitiveStrainProxy ?? 40) / 100,
+                  center: String(format: "%.0f", day.cognitiveStrainProxy ?? 40), unit: "/100", tint: Ink.amber)
+        RingGauge(value: 0.35, center: "35", unit: "%", tint: Ink.state(.calm))
+        HStack(spacing: 12) {
+            ForEach([FindingTone.bad, .good, .caution, .neutral], id: \.self) { t in
+                HStack(spacing: 6) {
+                    Image(systemName: t.icon).foregroundStyle(Ink.tone(t))
+                    Text(t.rawValue.uppercased()).font(.data(11)).foregroundStyle(Ink.dim)
+                }
+            }
+        }
+    }
+
+    let view = VStack(alignment: .leading, spacing: 18) {
+        Panel(title: "BLOCKS", trailing: "median focus · baseline is 50") { blockRow }
+        gauges.padding(.horizontal, 4)
+    }
+    .padding(16)
+    .frame(width: 1120, height: 380, alignment: .top)
+    .background(Ink.bg)
+
+    let path = try render(view, size: CGSize(width: 1120, height: 380), to: "06-day-visuals.png")
+    print("SNAPSHOT \(path)")
+    #expect(FileManager.default.fileExists(atPath: path))
+}
+
 /// A short real session through the real DSP, rolled up — enough to populate the timeline snapshot
 /// without generating the full two days.
 @MainActor

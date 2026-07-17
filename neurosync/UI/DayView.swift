@@ -127,21 +127,21 @@ private struct FindingsPanel: View {
 
     var body: some View {
         Panel(title: "FINDINGS", trailing: "\(day.findings.count)") {
-            VStack(alignment: .leading, spacing: 11) {
+            VStack(alignment: .leading, spacing: 13) {
                 ForEach(day.findings) { f in
-                    HStack(alignment: .top, spacing: 9) {
-                        Rectangle()
-                            .fill(Ink.tone(f.tone))
-                            .frame(width: 2)
-                            .frame(maxHeight: .infinity)
+                    HStack(alignment: .top, spacing: 11) {
+                        Image(systemName: f.tone.icon)
+                            .font(.system(size: 15))
+                            .foregroundStyle(Ink.tone(f.tone))
+                            .frame(width: 18)
 
                         VStack(alignment: .leading, spacing: 3) {
                             Text(f.headline)
-                                .font(.label(12, .semibold))
+                                .font(.label(14, .semibold))
                                 .foregroundStyle(Ink.text)
                                 .fixedSize(horizontal: false, vertical: true)
                             Text(f.caveat)
-                                .font(.label(11))
+                                .font(.label(12))
                                 .foregroundStyle(Ink.muted)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -153,10 +153,16 @@ private struct FindingsPanel: View {
 
                 // Printed under every findings list, always. It is not a disclaimer to be dismissed;
                 // it is the strongest true statement the data supports.
-                Text(confoundFooter)
-                    .font(.label(10))
-                    .foregroundStyle(Ink.muted)
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .top, spacing: 11) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Ink.muted)
+                        .frame(width: 18)
+                    Text(confoundFooter)
+                        .font(.label(12))
+                        .foregroundStyle(Ink.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }
@@ -191,92 +197,83 @@ private struct SegmentRow: View {
     let seg: Segment
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            Rectangle()
-                .fill(Ink.activity(seg.span.kind))
-                .frame(width: 3, height: 34)
+        HStack(alignment: .center, spacing: 14) {
+            IconChip(system: seg.span.kind.icon, tint: Ink.activity(seg.span.kind).opacity(1), size: 34)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(seg.span.label)
-                    .font(.label(12, .semibold))
+                    .font(.label(14, .semibold))
                     .foregroundStyle(Ink.text)
+                    .lineLimit(1)
                 Text("\(seg.span.kind.label) · \(clock(seg.span.start))–\(clock(seg.span.end)) · \(Int(seg.duration / 60))m · \(seg.span.source.label)")
-                    .font(.data(9))
+                    .font(.data(11))
                     .foregroundStyle(Ink.muted)
+                    .lineLimit(1)
             }
-            .frame(width: 240, alignment: .leading)
+            .frame(width: 244, alignment: .leading)
 
             Spacer(minLength: 0)
 
             if seg.sayable, let mf = seg.medianFocus {
-                Cell("FOCUS", String(format: "%.0f", mf),
-                     tint: mf < 45 ? Ink.warn : (mf >= flowThreshold ? Ink.amber : Ink.text))
-                Cell("FLOW", pct(seg.share(.focused)))
-                Cell("DAYDREAM", pct(seg.share(.daydream)),
-                     tint: seg.share(.daydream) >= 0.30 ? Ink.warn : Ink.text)
-                Cell("CLENCH", pct(seg.share(.clenched)),
-                     tint: seg.share(.clenched) >= 0.15 ? Ink.warn : Ink.text)
-                Cell("COVERAGE", pct(seg.coverage),
-                     tint: seg.coverage < 0.6 ? Ink.warn : Ink.dim)
+                MetricCell(label: "FOCUS", display: String(format: "%.0f", mf),
+                           value: mf / 100,
+                           tint: mf < 45 ? Ink.warn : (mf >= flowThreshold ? Ink.amber : Ink.text),
+                           baseline: 0.5)
+                MetricCell(label: "FLOW", display: pct(seg.share(.focused)),
+                           value: seg.share(.focused), tint: Ink.amber)
+                MetricCell(label: "DAYDREAM", display: pct(seg.share(.daydream)),
+                           value: seg.share(.daydream),
+                           tint: seg.share(.daydream) >= 0.30 ? Ink.warn : Ink.state(.daydream))
+                MetricCell(label: "CLENCH", display: pct(seg.share(.clenched)),
+                           value: seg.share(.clenched),
+                           tint: seg.share(.clenched) >= 0.15 ? Ink.warn : Ink.dim)
+                MetricCell(label: "COVERAGE", display: pct(seg.coverage),
+                           value: seg.coverage,
+                           tint: seg.coverage < 0.6 ? Ink.warn : Ink.dim)
             } else {
                 // The refusal, in the table. Not a zero, not a dash you could read as "fine".
-                HStack(spacing: 6) {
-                    Text("NO VERDICT")
-                        .font(.data(10, .bold))
-                        .tracking(1.2)
-                        .foregroundStyle(Ink.warn)
-                    Text("· \(pct(seg.coverage)) coverage")
-                        .font(.data(9))
-                        .foregroundStyle(Ink.muted)
+                HStack(spacing: 8) {
+                    Image(systemName: "nosign").font(.system(size: 14)).foregroundStyle(Ink.warn)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("NO VERDICT")
+                            .font(.data(12, .bold)).tracking(1.0).foregroundStyle(Ink.warn)
+                        Text("\(pct(seg.coverage)) coverage")
+                            .font(.data(11)).foregroundStyle(Ink.muted)
+                    }
                 }
                 .help("Too little of this block produced a trustworthy score to say anything about it.")
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
     }
 
     private func pct(_ v: Double) -> String { String(format: "%.0f%%", v * 100) }
-
-    private struct Cell: View {
-        let label: String
-        let value: String
-        var tint: Color = Ink.text
-
-        init(_ l: String, _ v: String, tint: Color = Ink.text) {
-            label = l; value = v; self.tint = tint
-        }
-
-        var body: some View {
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(label)
-                    .font(.data(8))
-                    .tracking(0.8)
-                    .foregroundStyle(Ink.muted)
-                Text(value)
-                    .font(.data(14, .semibold))
-                    .foregroundStyle(tint)
-            }
-            .frame(width: 74, alignment: .trailing)
-        }
-    }
 }
 
 // MARK: - Derived panels
 
-/// A number that is not a measurement, and says so in the panel rather than in a footnote.
-private struct ProxyPanel<Content: View>: View {
+/// A proxy panel: an icon + gauge on the left (glanceable), the caveat on the right (for the reader
+/// and for an agent). The `PROXY` tag stays — this is a derived indicator, not a measurement.
+private struct ProxyPanel<Gauge: View>: View {
     let title: String
+    let icon: String
     let caveat: String
-    @ViewBuilder var content: Content
+    @ViewBuilder var gauge: Gauge
 
     var body: some View {
         Panel(title: title, trailing: "PROXY") {
-            VStack(alignment: .leading, spacing: 9) {
-                content
+            HStack(alignment: .top, spacing: 16) {
+                VStack(spacing: 6) {
+                    Image(systemName: icon)
+                        .font(.system(size: 14))
+                        .foregroundStyle(Ink.muted)
+                    gauge
+                }
                 Text(caveat)
-                    .font(.label(10))
+                    .font(.label(12))
                     .foregroundStyle(Ink.muted)
                     .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -288,10 +285,12 @@ private struct StrainPanel: View {
     var body: some View {
         ProxyPanel(
             title: "COGNITIVE STRAIN",
+            icon: "gauge.with.dots.needle.67percent",
             caveat: "Alpha suppression plus jaw load, against your own baseline. This is NOT frontal midline theta — FMθ is the validated effort marker, it is read at Fz, and an around-ear pad physically cannot reach frontal midline. Anyone selling you FMθ from an earbud is estimating it or inventing it."
         ) {
             if let v = day.cognitiveStrainProxy {
-                Readout(label: "STRAIN", value: String(format: "%.0f", v), unit: "/100", emphasis: true)
+                RingGauge(value: v / 100, center: String(format: "%.0f", v), unit: "/100",
+                          tint: v >= 66 ? Ink.warn : Ink.amber)
             } else {
                 NotEnough()
             }
@@ -305,10 +304,12 @@ private struct RecoveryPanel: View {
     var body: some View {
         ProxyPanel(
             title: "MENTAL RECOVERY",
+            icon: "leaf.fill",
             caveat: "Share of trusted time spent alpha-dominant outside an effortful block — actual rest, not merely the absence of work. Withheld time is excluded from the denominator, so a day the electrode fell off does not read as a day of rest."
         ) {
             if let v = day.mentalRecoveryProxy {
-                Readout(label: "RECOVERY", value: String(format: "%.0f", v), unit: "%", emphasis: true)
+                RingGauge(value: v / 100, center: String(format: "%.0f", v), unit: "%",
+                          tint: Ink.state(.calm))
             } else {
                 NotEnough()
             }
@@ -321,16 +322,37 @@ private struct BergerPanelDay: View {
 
     var body: some View {
         Panel(title: "INDIVIDUAL ALPHA FREQUENCY", trailing: "measured") {
-            VStack(alignment: .leading, spacing: 9) {
-                if let f = day.individualAlphaFreq {
-                    Readout(label: "IAF", value: String(format: "%.1f", f), unit: "Hz", emphasis: true)
-                } else {
-                    NotEnough()
+            HStack(alignment: .top, spacing: 16) {
+                VStack(spacing: 6) {
+                    Image(systemName: "waveform.path.ecg")
+                        .font(.system(size: 14)).foregroundStyle(Ink.muted)
+                    if let f = day.individualAlphaFreq {
+                        VStack(spacing: 4) {
+                            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                                Text(String(format: "%.1f", f))
+                                    .font(.data(28, .bold)).foregroundStyle(Ink.amber)
+                                Text("Hz").font(.data(11)).foregroundStyle(Ink.muted)
+                            }
+                            // Where the peak sits in the 8–13 Hz alpha band.
+                            GeometryReader { g in
+                                ZStack(alignment: .leading) {
+                                    Rectangle().fill(Ink.rule)
+                                    Rectangle().fill(Ink.amber).frame(width: 2)
+                                        .offset(x: g.size.width * min(1, max(0, (f - 8) / 5)))
+                                }
+                            }
+                            .frame(width: 92, height: 4)
+                            Text("8–13 Hz").font(.data(9)).foregroundStyle(Ink.muted)
+                        }
+                    } else {
+                        NotEnough()
+                    }
                 }
                 Text("The Berger peak, median over trusted time. This one is real: IAF is a genuine per-subject constant, it is stable within a person, and it is the effect a single around-ear channel demonstrably shows.")
-                    .font(.label(10))
+                    .font(.label(12))
                     .foregroundStyle(Ink.muted)
                     .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -344,14 +366,18 @@ private struct BergerPanelDay: View {
 private struct BrainAgePanel: View {
     var body: some View {
         Panel(title: "BRAIN AGE", trailing: "NOT SHIPPED") {
-            VStack(alignment: .leading, spacing: 9) {
-                Text("——")
-                    .font(.data(20, .semibold))
-                    .foregroundStyle(Ink.muted)
+            HStack(alignment: .top, spacing: 16) {
+                VStack(spacing: 6) {
+                    Image(systemName: "questionmark.circle")
+                        .font(.system(size: 14)).foregroundStyle(Ink.muted)
+                    Image(systemName: "nosign")
+                        .font(.system(size: 30)).foregroundStyle(Ink.muted)
+                }
                 Text("Deliberately empty. Brain Age has no defensible basis at any channel count, and none at all on one around-ear electrode. The competitors who ship it are not measuring your brain's age; they are mapping a band-power scalar onto a number that sells. This panel is here so you can see the shape of the hole rather than have it quietly filled.")
-                    .font(.label(10))
+                    .font(.label(12))
                     .foregroundStyle(Ink.muted)
                     .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -359,10 +385,14 @@ private struct BrainAgePanel: View {
 
 private struct NotEnough: View {
     var body: some View {
-        Text("NOT ENOUGH TRUSTED SIGNAL")
-            .font(.data(10, .bold))
-            .tracking(1.2)
-            .foregroundStyle(Ink.warn)
+        VStack(spacing: 5) {
+            Image(systemName: "wifi.exclamationmark").font(.system(size: 20)).foregroundStyle(Ink.warn)
+            Text("NOT ENOUGH\nTRUSTED SIGNAL")
+                .font(.data(10, .bold)).tracking(0.8)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Ink.warn)
+        }
+        .frame(width: 92)
     }
 }
 

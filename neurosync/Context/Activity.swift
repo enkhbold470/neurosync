@@ -49,6 +49,22 @@ nonisolated enum ActivityKind: String, Codable, CaseIterable, Sendable {
         }
     }
 
+    /// SF Symbol — the glanceable layer. Humans read the icon; agents read `label`.
+    var icon: String {
+        switch self {
+        case .coding: return "chevron.left.forwardslash.chevron.right"
+        case .design: return "paintbrush.pointed.fill"
+        case .meeting: return "video.fill"
+        case .onCall: return "phone.badge.waveform.fill"
+        case .comms: return "bubble.left.and.bubble.right.fill"
+        case .reading: return "book.fill"
+        case .browsing: return "globe"
+        case .breakTime: return "pause.circle.fill"
+        case .walk: return "figure.walk"
+        case .unknown: return "app.dashed"
+        }
+    }
+
     /// Blocks you were *supposed* to be concentrating in. Only these can produce a "focus fell
     /// apart here" finding — a low score during a walk is not a problem, it is a walk.
     var isEffortful: Bool {

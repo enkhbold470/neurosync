@@ -3,6 +3,7 @@
 //  neurosync
 //
 
+import AppKit
 import Foundation
 import Observation
 
@@ -42,6 +43,17 @@ final class VertexModel {
 
     var isRecording: Bool { recStart != nil }
 
+    // MARK: Nudge
+    //
+    // The "you're crashing out" signal. Driven ONLY by trustworthy live focus (see `ingest`), shown
+    // on the Dock. When there is no trustworthy signal it clears — a frozen or withheld score must
+    // never strand a stale "!" on the Dock.
+
+    private(set) var nudge: FocusNudge.Level = .none
+    @ObservationIgnored private var nudgeEngine = FocusNudge()
+    @ObservationIgnored private var lastNudgeAt: Date?
+    @ObservationIgnored private var lostFor: Double = 0
+
     init() {
         link.onState = { [weak self] s in
             Task { @MainActor in self?.handle(state: s) }
@@ -60,6 +72,7 @@ final class VertexModel {
             beginRecording()
         case .idle, .failed, .bluetoothOff, .unauthorized:
             if was == .streaming || isRecording { endRecording() }
+            clearNudge()
         default:
             break
         }
@@ -67,6 +80,8 @@ final class VertexModel {
 
     private func ingest(_ s: VertexSnapshot) {
         snap = s
+
+        updateNudge(s.metrics)
 
         // Only trace what is real. A frozen or gated score is not a data point.
         guard s.metrics.signalOk, !s.metrics.warmingUp else { return }
@@ -77,6 +92,48 @@ final class VertexModel {
         if !s.metrics.calibrating && s.metrics.fsOk {
             focusHistory.append(s.metrics.focus)
             if focusHistory.count > Self.historyCap { focusHistory.removeFirst() }
+        }
+    }
+
+    // MARK: Nudge driving
+
+    private func updateNudge(_ m: FocusMetrics) {
+        let now = Date()
+        let dt = lastNudgeAt.map { min(5, max(0, now.timeIntervalSince($0))) } ?? 0
+        lastNudgeAt = now
+
+        if m.trustworthy {
+            lostFor = 0
+            let newLevel = nudgeEngine.sample(focus: m.focus, dt: dt)
+            setNudge(newLevel)
+        } else {
+            // No trustworthy score. Hold briefly (a blink is not a recovery), then clear — a
+            // withheld or frozen score must not keep a stale nudge on the Dock.
+            lostFor += dt
+            if lostFor > 10 { clearNudge() }
+        }
+    }
+
+    private func setNudge(_ level: FocusNudge.Level) {
+        guard level != nudge else { return }
+        let escalated = level > nudge
+        nudge = level
+        applyDock(level, bounce: escalated)
+    }
+
+    private func clearNudge() {
+        nudgeEngine.reset()
+        lostFor = 0
+        setNudge(.none)
+    }
+
+    /// The Dock badge is the whole ask: a glanceable "!" when you're crashing out. Escalating to a
+    /// nudge also bounces the icon once, so it catches your eye even when NeuroSync is in the back.
+    private func applyDock(_ level: FocusNudge.Level, bounce: Bool) {
+        NSApp.dockTile.badgeLabel = level.badge
+        NSApp.dockTile.display()
+        if bounce, level != .none {
+            NSApp.requestUserAttention(.informationalRequest)
         }
     }
 
