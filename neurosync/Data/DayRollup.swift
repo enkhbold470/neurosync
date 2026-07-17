@@ -84,9 +84,8 @@ nonisolated struct Day: Identifiable, Sendable {
     var markers: [Marker]
     var findings: [Finding]
 
-    /// True if ANY session in the day is synthetic. The whole day is then watermarked — mixing a
-    /// real session and a generated one into one un-flagged ribbon is exactly the confusion the
-    /// watermark exists to prevent.
+    /// True if ANY session in the day is synthetic. The flag propagates from the session records
+    /// so a day mixing a real session with a generated one is never reported as fully real.
     var synthetic: Bool { sessions.contains { $0.synthetic } }
 
     var coverage: Double {
@@ -327,5 +326,14 @@ nonisolated func clock(_ d: Date, calendar: Calendar = .current) -> String {
     f.calendar = calendar
     f.timeZone = calendar.timeZone
     f.dateFormat = "HH:mm"
+    return f.string(from: d)
+}
+
+/// HH:mm:ss — for the ruler and scrubber when zoomed in past the minute scale.
+nonisolated func clockSec(_ d: Date, calendar: Calendar = .current) -> String {
+    let f = DateFormatter()
+    f.calendar = calendar
+    f.timeZone = calendar.timeZone
+    f.dateFormat = "HH:mm:ss"
     return f.string(from: d)
 }

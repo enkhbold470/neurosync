@@ -171,9 +171,9 @@ private func fixture() -> (FocusMetrics, [Double]) {
     #expect(FileManager.default.fileExists(atPath: path))
 }
 
-/// The DAY view, populated. Proves the timeline Canvas, the state runs, the withheld gaps, the
-/// findings layout and the synthetic watermark all compose and render — the visual counterpart to
-/// the data-level tests in DayTests. The signal behind it is a fixture through the real DSP.
+/// The DAY view, populated. Proves the timeline Canvas, the state runs, the withheld gaps, and the
+/// findings layout all compose and render — the visual counterpart to the data-level tests in
+/// DayTests. The signal behind it is a fixture through the real DSP.
 @MainActor
 @Test func snapshotDayTimeline() throws {
     let day = snapshotFixtureDay()
@@ -199,7 +199,6 @@ private func fixture() -> (FocusMetrics, [Double]) {
     }
     .padding(14)
     .frame(width: 1120, height: 820, alignment: .top)
-    .syntheticWatermark(day.synthetic)
     .background(Ink.bg)
 
     let path = try render(view, size: CGSize(width: 1120, height: 820), to: "05-day-timeline.png")

@@ -19,8 +19,8 @@
 //
 //    1. Nothing here may write a focus, calm or clench value. It has no access to one and must not
 //       acquire one. It shapes physics; the DSP does the rest.
-//    2. Everything it produces is flagged `synthetic: true` at the record level, watermarked at
-//       every UI surface, and named SYNTHETIC-- on disk.
+//    2. Everything it produces is flagged `synthetic: true` at the record level and carries a
+//       provenance `syntheticNote`; Store.write refuses a synthetic record that lacks one.
 //    3. It is never invoked implicitly. No first-run seeding, no empty-state auto-fill.
 //
 //  A worked example of why this is not a loophole: the "meeting" profile below sets a loud jaw. The

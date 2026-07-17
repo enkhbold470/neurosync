@@ -37,8 +37,6 @@ struct DayView: View {
                                 BrainAgePanel()
                             }
                         }
-                        // Applied at the ROOT of the day, so nothing inside can escape the hatch.
-                        .syntheticWatermark(day.synthetic)
                     }
                     .padding(14)
                 }
@@ -70,7 +68,6 @@ private struct DayHeader: View {
                     HStack(spacing: 5) {
                         Text(dayLabel(d))
                             .font(.data(10, d.key == day.key ? .bold : .regular))
-                        if d.synthetic { SyntheticBadge() }
                     }
                     .foregroundStyle(d.key == day.key ? Ink.bg : Ink.dim)
                     .padding(.horizontal, 9)
@@ -424,13 +421,13 @@ private struct EmptyDay: View {
             Divider().overlay(Ink.rule).frame(width: 260)
 
             VStack(spacing: 8) {
-                Button(model.busy ? "Generating…" : "Generate two watermarked synthetic days") {
+                Button(model.busy ? "Generating…" : "Generate two synthetic days") {
                     model.generateSynthetic()
                 }
                 .buttonStyle(InstrumentButton())
                 .disabled(model.busy)
 
-                Text("For designing this view without hardware. The waveforms are artificial and every surface that renders them is stamped SYNTHETIC. The scores are still computed by the real DSP — nothing is typed in.")
+                Text("For designing this view without hardware. The waveforms are artificial, and each record carries \"synthetic\": true in its JSON. The scores are still computed by the real DSP — nothing is typed in.")
                     .font(.label(10))
                     .foregroundStyle(Ink.muted)
                     .multilineTextAlignment(.center)
