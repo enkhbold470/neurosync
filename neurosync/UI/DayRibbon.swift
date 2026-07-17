@@ -230,8 +230,9 @@ struct DayRibbon: View {
                 .font(.data(12, .semibold))
                 .foregroundStyle(Ink.dim)
                 .buttonStyle(.plain)
-                .padding(.horizontal, 9).padding(.vertical, 4)
-                .overlay(Rectangle().strokeBorder(Ink.rule, lineWidth: 1))
+                .padding(.horizontal, 11).padding(.vertical, 5)
+                .overlay(RoundedRectangle(cornerRadius: Ink.radius, style: .continuous)
+                    .strokeBorder(Ink.rule, lineWidth: 1))
 
             Spacer()
 
@@ -250,7 +251,8 @@ struct DayRibbon: View {
                 .font(.system(size: 12, weight: .bold))
                 .foregroundStyle(Ink.dim)
                 .frame(width: 28, height: 26)
-                .overlay(Rectangle().strokeBorder(Ink.rule, lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: Ink.radius, style: .continuous)
+                    .strokeBorder(Ink.rule, lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
