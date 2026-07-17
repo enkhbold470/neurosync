@@ -29,21 +29,30 @@ counts, which go through the same `FocusEngine`, the same three gates and the sa
 a real board's, and come out the far side as numbers the DSP computed. The generator has no channel
 through which to say "focus was 72", and it must never acquire one.
 
-That compromise holds only because of the wall, and the wall is not optional:
+That compromise holds only because of the wall. The wall is now **data-level only** — the on-screen
+markers were removed at the owner's request (see the amendment below) — but its load-path guarantees
+are not optional:
 
-- Generated records carry `synthetic: true`, are named `SYNTHETIC--*.json` on disk, and are refused
-  by `Store.write` if they lack a provenance note.
-- Every UI surface that renders one goes through `.syntheticWatermark(_:)` — a diagonal hatch and an
-  amber border, applied at the *root* of the day so no panel inside it can escape, plus a `SYNTHETIC`
-  badge on the day-selector tab. (The loud full-width banner was removed at the owner's request on
-  2026-07-14; they take on verbal disclosure. The data-level flags below are the real guarantee and
-  are untouched.)
+- Generated records carry `synthetic: true` in their JSON, and are refused by `Store.write` if they
+  lack a provenance `syntheticNote`. `index.json`'s manifest carries the same flag and a note. This
+  is what tells a reader — and the app on load — that the waveforms were generated, not measured.
+- `synthetic` is decoded from the in-file flag, never inferred from a filename, so the app can never
+  read a generated session back as real.
 - Synthetic data may never reach the menu bar, the live gauge, or any aggregate mixed with real
   sessions. `menuBarNeverReadsPersistedData` pins this.
 - Generation is never implicit. No first-run seeding, no empty-state auto-fill.
+- The `DayModel.synthetic` flag still propagates up from any synthetic session in the day, so a
+  mixed day is never reported as fully real.
 
-If you remove the watermark, you have broken Manifesto II and you must say so out loud. The honest
-move at that point is to delete this section, not to keep it while contradicting it.
+**Amended 2026-07-17 — the on-screen wall was removed at the owner's request.** The `SYNTHETIC`
+tab badge, the diagonal hatch + amber border (`.syntheticWatermark`, whole `UI/Watermark.swift`
+deleted), and the `SYNTHETIC--` filename prefix are gone. On-screen, a synthetic day now looks like
+a real one; the owner takes on verbal disclosure, as they already did when the full-width banner was
+dropped on 2026-07-14. The data-level guarantees above are untouched and remain the real defence.
+This is a deliberate weakening of Manifesto II's on-screen half: the core rule — **no fabricated
+*score* ever reaches a surface** — still holds, because `Synthetic/` still has no channel to emit a
+number, but a screenshot of a synthetic day no longer announces itself as generated. If you are
+tempted to re-add a watermark, that is a product decision for the owner, not a silent restoration.
 
 Test fixtures in `neurosyncTests/` remain what they always were: inputs to the real DSP, never
 outputs.
@@ -76,8 +85,8 @@ xcodebuild test -scheme neurosync -destination 'platform=macOS,arch=arm64' -only
 xcodebuild test -scheme neurosync -destination 'platform=macOS,arch=arm64' \
   '-only-testing:neurosyncTests/detachedElectrodeNeverReadsAsHighFocus()'
 
-# Two watermarked synthetic days, for designing the DAY view without hardware. Waveforms are
-# generated; every score is computed by the real DSP. Needs a granted data folder (see below).
+# Two synthetic days, for designing the DAY view without hardware. Waveforms are generated (flagged
+# synthetic: true in their JSON); every score is computed by the real DSP. Needs a granted data folder.
 # This is an explicit opt-in command — it is NEVER run on launch or to fill an empty view.
 /path/to/neurosync.app/Contents/MacOS/neurosync --generate-synthetic
 ```
@@ -105,7 +114,7 @@ Data/DayRollup.swift       segments, the findings engine, the labelled proxies
 Synthetic/                 waveform generator + the two scripted days + the --generate-synthetic CLI
 App/VertexModel.swift      @MainActor view state; owns the link + live recording, no DSP of its own
 App/DayModel.swift         @MainActor state for the DAY view; owns the Store
-UI/                        Theme, Scope/Spectrum canvases, Panels, DayRibbon, DayView, Watermark
+UI/                        Theme, Scope/Spectrum canvases, Panels, DayRibbon, DayView
 ```
 
 Signal flows one way: `CoreBluetooth → decode → FocusEngine → snapshot → @MainActor`. The link

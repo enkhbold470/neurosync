@@ -241,7 +241,7 @@ func aWithheldSecondBreaksAFlowRun() {
 // MARK: - The wall
 
 @Test
-func syntheticRecordsAnnounceThemselvesInTheFilename() {
+func aDayWithAnySyntheticSessionIsFlaggedSynthetic() {
     let s = SessionRecord(
         synthetic: true, syntheticNote: syntheticNote,
         startedAt: Date(timeIntervalSince1970: 0), endedAt: Date(timeIntervalSince1970: 60),

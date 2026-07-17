@@ -11,8 +11,9 @@
 //     omitted, never back-filled, never interpolated. `focus: null, state: "withheld"` is the most
 //     important row in this file, because it is the one that says "I don't know."
 //
-//  2. SYNTHETIC IS DECLARED AT THE TOP. `synthetic: true` is set by the generator and by nothing
-//     else, and every surface that renders it has to say so. See Synthetic/ and UI/Watermark.swift.
+//  2. SYNTHETIC IS DECLARED IN THE DATA. `synthetic: true` is set by the generator and by nothing
+//     else, travels with the record in its JSON and in index.json's manifest, and gates Store.write
+//     (a synthetic record with no `syntheticNote` is refused). See Synthetic/.
 //
 
 import Foundation

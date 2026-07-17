@@ -2,7 +2,7 @@
 //  SyntheticCLI.swift
 //  neurosync
 //
-//  `neurosync --generate-synthetic` — build the two watermarked days, write them, exit.
+//  `neurosync --generate-synthetic` — build the two synthetic days, write them, exit.
 //
 //  Exists so the day can be regenerated without a GUI click, and so CI/snapshot work has a way in.
 //  It is an explicit, named, opt-in command. It is NOT wired to launch, to first run, or to the

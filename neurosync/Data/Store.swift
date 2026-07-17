@@ -161,8 +161,7 @@ final class Store {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withFullDate, .withTime, .withColonSeparatorInTime]
         let stamp = f.string(from: s.startedAt).replacingOccurrences(of: ":", with: "-")
-        let tag = s.synthetic ? "SYNTHETIC--" : ""
-        return "\(tag)\(stamp)--\(s.id.uuidString.prefix(8)).json"
+        return "\(stamp)--\(s.id.uuidString.prefix(8)).json"
     }
 
     @discardableResult
@@ -170,9 +169,10 @@ final class Store {
         guard let sessionsDir else { throw StoreError.noLocation }
         try ensureLayout()
 
-        // The wall, part one: a synthetic record announces itself in its FILENAME, so it is obvious
-        // in Finder, in a `ls`, and in any script that ingests this folder — not only to a reader
-        // who parses the JSON.
+        // A synthetic record must carry its provenance: `synthetic: true` with no `syntheticNote`
+        // is how a generated record would sneak in unexplained, so Store.write refuses it. The
+        // flag itself lives in the JSON (and in index.json's manifest) — that is what tells a
+        // reader, or the app on load, that these waveforms were generated rather than measured.
         if session.synthetic && session.syntheticNote == nil {
             throw StoreError.refusedSyntheticLeak
         }

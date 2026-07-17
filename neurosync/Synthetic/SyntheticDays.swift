@@ -10,8 +10,8 @@
 //  Focus.swift, and it is genuinely not decided here — I could not make this file print a 72 if I
 //  wanted to, because it has no channel through which to say so.
 //
-//  Every session it produces is `synthetic: true`, is named SYNTHETIC-- on disk, and is watermarked
-//  wherever it is drawn.
+//  Every session it produces is `synthetic: true` in its JSON and carries a `syntheticNote`
+//  explaining how it was made; Store.write refuses it otherwise.
 //
 //  Two of the four things the day demonstrates are the app REFUSING to answer, and that is not
 //  decoration either:
