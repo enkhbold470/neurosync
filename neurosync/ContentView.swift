@@ -145,16 +145,18 @@ private struct SurfacePicker: View {
                     surface = s
                 } label: {
                     Text(s.rawValue)
-                        .font(.data(9, surface == s ? .bold : .regular))
+                        .font(.data(11, surface == s ? .bold : .regular))
                         .tracking(1.2)
                         .foregroundStyle(surface == s ? Ink.bg : Ink.dim)
-                        .frame(width: 48, height: 22)
+                        .frame(width: 52, height: 26)
                         .background(surface == s ? Ink.amber : Color.clear)
                 }
                 .buttonStyle(.plain)
             }
         }
-        .overlay(Rectangle().strokeBorder(Ink.rule, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: Ink.radius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Ink.radius, style: .continuous)
+            .strokeBorder(Ink.rule, lineWidth: 1))
     }
 }
 
@@ -182,7 +184,9 @@ private struct MarkerRow: View {
                 .help("Log \(k.label.lowercased()) — self-reported, and recorded as such. One around-ear channel cannot measure stress or anxiety, so this is you telling the instrument, not the instrument telling you.")
             }
         }
-        .overlay(Rectangle().strokeBorder(Ink.rule, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: Ink.radius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Ink.radius, style: .continuous)
+            .strokeBorder(Ink.rule, lineWidth: 1))
         .disabled(!days.hasLocation)
         .opacity(days.hasLocation ? 1 : 0.35)
     }
@@ -238,11 +242,11 @@ private struct RatePicker: View {
                     onPick(idx)
                 } label: {
                     Text("\(sps)")
-                        .font(.data(9, isCurrent ? .bold : .regular))
+                        .font(.data(11, isCurrent ? .bold : .regular))
                         .foregroundStyle(
                             isCurrent ? Ink.bg : (ok ? Ink.dim : Ink.muted.opacity(0.55))
                         )
-                        .frame(width: 42, height: 22)
+                        .frame(width: 46, height: 26)
                         .background(isCurrent ? Ink.amber : Color.clear)
                 }
                 .buttonStyle(.plain)
@@ -251,7 +255,9 @@ private struct RatePicker: View {
                       : (focusFeasibility(fs: Double(sps)).reason ?? ""))
             }
         }
-        .overlay(Rectangle().strokeBorder(Ink.rule, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: Ink.radius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Ink.radius, style: .continuous)
+            .strokeBorder(Ink.rule, lineWidth: 1))
     }
 }
 

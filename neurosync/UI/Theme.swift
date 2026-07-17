@@ -25,6 +25,11 @@ enum Ink {
     /// It is a warning, not decoration.
     static let warn = Color(red: 0.859, green: 0.463, blue: 0.408)
 
+    /// Corner radii, matched to the neurofocus.dev landing page tokens: `--radius: 12px` for small
+    /// elements (buttons, chips, pips), `--radius-card: 24px` for content cards.
+    static let radiusCard: CGFloat = 20
+    static let radius: CGFloat = 11
+
     /// The day-timeline state palette. Desaturated on purpose — this is a lane on an instrument,
     /// not a productivity app's mood ring. Amber is still the only saturated colour, and it is
     /// still reserved for the one thing worth reading: engagement.
@@ -96,10 +101,13 @@ struct Panel<Content: View>: View {
             }
             content
         }
-        .padding(16)
+        .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Ink.panel)
-        .overlay(Rectangle().strokeBorder(Ink.rule, lineWidth: 1))
+        .background(Ink.panel, in: RoundedRectangle(cornerRadius: Ink.radiusCard, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Ink.radiusCard, style: .continuous)
+                .strokeBorder(Ink.rule, lineWidth: 1)
+        )
     }
 }
 

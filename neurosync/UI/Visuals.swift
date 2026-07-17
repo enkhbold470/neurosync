@@ -20,8 +20,11 @@ struct IconChip: View {
             .font(.system(size: size * 0.42, weight: .semibold))
             .foregroundStyle(tint)
             .frame(width: size, height: size)
-            .background(tint.opacity(0.14))
-            .overlay(Rectangle().strokeBorder(tint.opacity(0.5), lineWidth: 1))
+            .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: Ink.radius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Ink.radius, style: .continuous)
+                    .strokeBorder(tint.opacity(0.5), lineWidth: 1)
+            )
     }
 }
 
@@ -45,9 +48,9 @@ struct MetricCell: View {
                 .foregroundStyle(tint)
             GeometryReader { g in
                 ZStack(alignment: .leading) {
-                    Rectangle().fill(Ink.rule)
-                    Rectangle().fill(tint)
-                        .frame(width: g.size.width * min(1, max(0, value)))
+                    Capsule().fill(Ink.rule)
+                    Capsule().fill(tint)
+                        .frame(width: max(4, g.size.width * min(1, max(0, value))))
                     if let b = baseline {
                         Rectangle().fill(Ink.dim)
                             .frame(width: 1)
@@ -55,7 +58,7 @@ struct MetricCell: View {
                     }
                 }
             }
-            .frame(height: 4)
+            .frame(height: 5)
         }
         .frame(width: 88, alignment: .leading)
     }
