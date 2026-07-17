@@ -56,6 +56,16 @@ nonisolated struct Segment: Identifiable, Sendable {
 
 nonisolated enum FindingTone: String, Sendable {
     case bad, good, caution, neutral
+
+    /// SF Symbol for the glanceable layer.
+    var icon: String {
+        switch self {
+        case .bad: return "exclamationmark.triangle.fill"
+        case .good: return "checkmark.seal.fill"
+        case .caution: return "exclamationmark.circle.fill"
+        case .neutral: return "info.circle.fill"
+        }
+    }
 }
 
 nonisolated struct Finding: Identifiable, Sendable {

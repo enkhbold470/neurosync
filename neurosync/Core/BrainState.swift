@@ -50,6 +50,18 @@ nonisolated enum BrainState: String, Codable, CaseIterable, Sendable {
         }
     }
 
+    /// SF Symbol — the glanceable layer, for humans. The `label`/`meaning` text is for agents.
+    var icon: String {
+        switch self {
+        case .withheld: return "nosign"
+        case .clenched: return "bolt.fill"
+        case .focused: return "scope"
+        case .daydream: return "cloud.fill"
+        case .calm: return "leaf.fill"
+        case .neutral: return "minus"
+        }
+    }
+
     /// What the state actually claims — shown on hover, so no one has to guess.
     var meaning: String {
         switch self {

@@ -27,6 +27,10 @@ struct ContentView: View {
         VStack(spacing: 0) {
             Header(model: model, days: days, surface: $surface)
 
+            if model.nudge != .none {
+                NudgeBanner(level: model.nudge)
+            }
+
             Group {
                 switch surface {
                 case .live:
@@ -53,6 +57,34 @@ struct ContentView: View {
             model.store = days.store
             model.onSessionWritten = { days.load() }
         }
+    }
+}
+
+// MARK: - Nudge banner
+
+/// The on-screen twin of the Dock badge: when the live score has stayed deep below your baseline,
+/// it says so, and says what to do about it. Only appears on a trustworthy, sustained slump.
+private struct NudgeBanner: View {
+    let level: FocusNudge.Level
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: level.icon)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Ink.bg)
+            Text(level == .walk ? "CRASHING OUT" : "FOCUS LOW")
+                .font(.data(12, .bold))
+                .tracking(1.6)
+                .foregroundStyle(Ink.bg)
+            Text(level.message ?? "")
+                .font(.label(13))
+                .foregroundStyle(Ink.bg.opacity(0.85))
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(level == .walk ? Ink.warn : Ink.amber)
     }
 }
 
