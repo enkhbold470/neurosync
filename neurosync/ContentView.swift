@@ -28,12 +28,13 @@ struct ContentView: View {
     /// Injected by the App so the window and the menu bar share one source of truth.
     let model: VertexModel
     let days: DayModel
+    var cloud: ConvexCloud
 
     @State private var surface: Surface = .live
 
     var body: some View {
         VStack(spacing: 0) {
-            Header(model: model, days: days, surface: $surface)
+            Header(model: model, days: days, cloud: cloud, surface: $surface)
 
             if model.nudge != .none {
                 NudgeBanner(level: model.nudge)
@@ -65,12 +66,12 @@ struct ContentView: View {
 
             // Opt-in cloud mirror. Off (a true no-op) unless a CONVEX_URL is configured and a user is
             // signed in — the instrument stays local-first. Uploads local sessions, never synthetic.
-            let cloud = CloudSyncController(store: days.store)
+            let sync = CloudSyncController(store: days.store, uploader: cloud.uploader)
             model.onSessionWritten = {
                 days.load()
-                Task { await cloud.syncPending() }
+                Task { await sync.syncPending() }
             }
-            await cloud.syncPending()
+            await sync.syncPending()
         }
     }
 }
@@ -124,6 +125,7 @@ private struct NudgeBanner: View {
 private struct Header: View {
     let model: VertexModel
     let days: DayModel
+    var cloud: ConvexCloud
     @Binding var surface: Surface
 
     var body: some View {
@@ -155,6 +157,8 @@ private struct Header: View {
             }
 
             StatusPip(state: model.state)
+
+            CloudSyncButton(cloud: cloud)
 
             if model.isConnected {
                 Button {
@@ -527,5 +531,5 @@ extension View {
 }
 
 #Preview {
-    ContentView(model: VertexModel(), days: DayModel())
+    ContentView(model: VertexModel(), days: DayModel(), cloud: ConvexCloud())
 }

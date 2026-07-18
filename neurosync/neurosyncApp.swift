@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import ClerkKit
 
 /// The real entry point.
 ///
@@ -32,9 +33,20 @@ struct NeuroSyncApp: App {
     /// See `menuBarNeverReadsPersistedData`.
     @State private var days = DayModel()
 
+    /// Opt-in cloud (Convex + Clerk). Configures Clerk once at launch when a deployment URL + Clerk
+    /// key are present; otherwise inert and the app stays fully local-first.
+    @State private var cloud = ConvexCloud()
+
     var body: some Scene {
         WindowGroup {
-            ContentView(model: model, days: days)
+            // Only touch Clerk when a deployment + key are configured — otherwise the app is fully
+            // local-first and never initializes the auth SDK (which also keeps the test host clean).
+            if CloudConfig.canOfferSync {
+                ContentView(model: model, days: days, cloud: cloud)
+                    .environment(Clerk.shared)
+            } else {
+                ContentView(model: model, days: days, cloud: cloud)
+            }
         }
         .windowResizability(.contentMinSize)
 

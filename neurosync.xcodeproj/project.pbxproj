@@ -6,6 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8DE3481B300BB875009FBB30 /* ConvexMobile in Frameworks */ = {isa = PBXBuildFile; productRef = BB0000000000000000000001 /* ConvexMobile */; };
+		8DE3481C300BB875009FBB30 /* ClerkConvex in Frameworks */ = {isa = PBXBuildFile; productRef = BB0000000000000000000002 /* ClerkConvex */; };
+		8DE3481D300BB875009FBB30 /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = BB0000000000000000000003 /* ClerkKit */; };
+		8DE3481E300BB875009FBB30 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = BB0000000000000000000004 /* ClerkKitUI */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		8D19178E3003A88400BBECC3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +59,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8DE3481E300BB875009FBB30 /* ClerkKitUI in Frameworks */,
+				8DE3481D300BB875009FBB30 /* ClerkKit in Frameworks */,
+				8DE3481C300BB875009FBB30 /* ClerkConvex in Frameworks */,
+				8DE3481B300BB875009FBB30 /* ConvexMobile in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +123,10 @@
 			);
 			name = neurosync;
 			packageProductDependencies = (
+				BB0000000000000000000001 /* ConvexMobile */,
+				BB0000000000000000000002 /* ClerkConvex */,
+				BB0000000000000000000003 /* ClerkKit */,
+				BB0000000000000000000004 /* ClerkKitUI */,
 			);
 			productName = neurosync;
 			productReference = 8D1917803003A88300BBECC3 /* neurosync.app */;
@@ -195,6 +210,11 @@
 			);
 			mainGroup = 8D1917773003A88300BBECC3;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				AA0000000000000000000001 /* XCRemoteSwiftPackageReference "convex-swift" */,
+				AA0000000000000000000002 /* XCRemoteSwiftPackageReference "clerk-convex-swift" */,
+				AA0000000000000000000003 /* XCRemoteSwiftPackageReference "clerk-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8D1917813003A88300BBECC3 /* Products */;
 			projectDirPath = "";
@@ -579,6 +599,56 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AA0000000000000000000001 /* XCRemoteSwiftPackageReference "convex-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/get-convex/convex-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.8.0;
+			};
+		};
+		AA0000000000000000000002 /* XCRemoteSwiftPackageReference "clerk-convex-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/clerk/clerk-convex-swift";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 0.1.0;
+			};
+		};
+		AA0000000000000000000003 /* XCRemoteSwiftPackageReference "clerk-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/clerk/clerk-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.3.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		BB0000000000000000000001 /* ConvexMobile */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000001 /* XCRemoteSwiftPackageReference "convex-swift" */;
+			productName = ConvexMobile;
+		};
+		BB0000000000000000000002 /* ClerkConvex */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000002 /* XCRemoteSwiftPackageReference "clerk-convex-swift" */;
+			productName = ClerkConvex;
+		};
+		BB0000000000000000000003 /* ClerkKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000003 /* XCRemoteSwiftPackageReference "clerk-ios" */;
+			productName = ClerkKit;
+		};
+		BB0000000000000000000004 /* ClerkKitUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000003 /* XCRemoteSwiftPackageReference "clerk-ios" */;
+			productName = ClerkKitUI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8D1917783003A88300BBECC3 /* Project object */;
 }

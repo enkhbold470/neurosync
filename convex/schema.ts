@@ -37,6 +37,17 @@ const epoch = v.object({
 });
 
 export default defineSchema({
+  // VENDORED from the landing page (neurofocus-finc). This deployment is shared, and deploying
+  // replaces the whole functions dir — so the waitlist table + functions must live here too, or a
+  // deploy from NeuroSync would drop them. Keep byte-identical to the landing page's schema.
+  waitlist: defineTable({
+    name: v.string(),
+    email: v.string(),
+    org: v.optional(v.string()),
+    message: v.optional(v.string()),
+    joinedAt: v.optional(v.number()),
+  }).index("by_email", ["email"]),
+
   // Identity mirror. `subject` is the auth provider's stable id (Clerk/Auth0).
   users: defineTable({
     subject: v.string(),

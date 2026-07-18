@@ -85,7 +85,7 @@ private func fixture() -> (FocusMetrics, [Double]) {
 @MainActor
 @Test func snapshotNoDevice() throws {
     // 100% real: this is exactly what the app shows with no board. No fixture involved.
-    let path = try render(ContentView(model: VertexModel(), days: DayModel()),
+    let path = try render(ContentView(model: VertexModel(), days: DayModel(), cloud: ConvexCloud()),
                           size: CGSize(width: 1180, height: 760), to: "01-no-device.png")
     print("SNAPSHOT \(path)")
     #expect(FileManager.default.fileExists(atPath: path))
@@ -96,7 +96,7 @@ private func fixture() -> (FocusMetrics, [Double]) {
 @Test func snapshotConnectAppearances() throws {
     for scheme in [ColorScheme.light, .dark] {
         let name = scheme == .light ? "01a-connect-light.png" : "01b-connect-dark.png"
-        let v = ContentView(model: VertexModel(), days: DayModel())
+        let v = ContentView(model: VertexModel(), days: DayModel(), cloud: ConvexCloud())
             .environment(\.colorScheme, scheme)
         let path = try render(v, size: CGSize(width: 1180, height: 760), to: name)
         print("SNAPSHOT \(path)")

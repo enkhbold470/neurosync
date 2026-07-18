@@ -27,7 +27,22 @@ enum CloudConfig {
         return nil
     }
 
+    /// Clerk publishable key (public — safe to ship). From Info.plist `CLERK_PUBLISHABLE_KEY` or env.
+    /// `nil`/empty → Clerk is not configured and cloud sign-in is unavailable.
+    static var clerkPublishableKey: String? {
+        if let s = Bundle.main.object(forInfoDictionaryKey: "CLERK_PUBLISHABLE_KEY") as? String, !s.isEmpty {
+            return s
+        }
+        if let s = ProcessInfo.processInfo.environment["CLERK_PUBLISHABLE_KEY"], !s.isEmpty {
+            return s
+        }
+        return nil
+    }
+
     /// Cloud sync only runs when a deployment is configured AND the user has opted in by signing in.
     /// Absent either, the app is fully local-first with no network use.
     static var isConfigured: Bool { convexURL != nil }
+
+    /// Both a deployment URL and a Clerk key are needed to offer sign-in + sync.
+    static var canOfferSync: Bool { convexURL != nil && clerkPublishableKey != nil }
 }

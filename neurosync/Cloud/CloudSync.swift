@@ -21,19 +21,20 @@
 
 import Foundation
 
-/// The network transport. Implemented by a Convex-backed uploader once the SDK + auth are wired.
-nonisolated protocol CloudUploader: Sendable {
+/// The network transport. Implemented by `ConvexUploader` (Convex + Clerk). MainActor-isolated to
+/// match the app's default isolation and the Convex client's main-actor-safe API.
+protocol CloudUploader {
     /// Upsert one session (metadata + epoch chunks) idempotently by its UUID. Throws on failure so the
     /// queue can stop and retry later; the local file remains the durable copy.
     func upload(_ record: SessionRecord) async throws
     /// Whether a user is signed in and uploads may proceed.
-    var isReady: Bool { get async }
+    var isReady: Bool { get }
 }
 
 /// The default: cloud sync is off. No network, no account, no-op.
-nonisolated struct DisabledUploader: CloudUploader {
+struct DisabledUploader: CloudUploader {
     func upload(_ record: SessionRecord) async throws {}
-    var isReady: Bool { get async { false } }
+    var isReady: Bool { false }
 }
 
 /// Persisted record of what's already been mirrored, so we upload each session once (and again only
@@ -76,7 +77,7 @@ final class CloudSyncController {
     /// a session is written). Never uploads synthetic sessions.
     func syncPending() async {
         guard CloudConfig.isConfigured, store.hasLocation, !running else { return }
-        guard await uploader.isReady else { return }
+        guard uploader.isReady else { return }
         running = true
         defer { running = false }
 
