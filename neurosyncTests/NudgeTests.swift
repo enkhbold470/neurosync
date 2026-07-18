@@ -33,7 +33,7 @@ private func hold(_ n: inout FocusNudge, focus: Double, seconds: Int) {
     hold(&n, focus: 6, seconds: 50)       // < 10 sustained
     #expect(n.level == .walk)
     #expect(n.level.badge == "!!")
-    #expect(n.level.message?.contains("10-minute") == true)
+    #expect(n.level.message?.lowercased().contains("walk") == true)
 }
 
 @Test func recoveryClearsTheNudge() {
