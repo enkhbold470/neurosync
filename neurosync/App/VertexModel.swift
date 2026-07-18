@@ -54,6 +54,32 @@ final class VertexModel {
     @ObservationIgnored private var lastNudgeAt: Date?
     @ObservationIgnored private var lostFor: Double = 0
 
+    // MARK: Focus block
+    //
+    // A block is N minutes the user declared they mean to concentrate in. It is the honest source of
+    // the `effortful` context `resolveState` requires — the calendar/app watcher is the other one —
+    // and it is NEVER inferred from the brain state. While a block runs, its own per-second loop
+    // drives the drift intervention off the SAME gated, smoothed state stream the recorder writes to
+    // disk, and accumulates the block's epochs so the recap and the saved SessionRecord are built
+    // from one `[Epoch]` and can't disagree. With no board, the loop produces `.withheld` epochs and
+    // nothing fires.
+
+    private(set) var block: ActiveBlock?
+    /// The last completed block's summary, for the recap surface. Cleared when a new block starts.
+    private(set) var lastRecap: BlockRecap?
+    /// True for a few seconds after a drift nudge fires — a glanceable menu-bar state change.
+    private(set) var driftAlert = false
+
+    @ObservationIgnored private let blockConfig = FocusBlockConfig()
+    @ObservationIgnored private var drift = DriftIntervention()
+    @ObservationIgnored private var blockBuilder = EpochBuilder()
+    @ObservationIgnored private var blockEpochs: [Epoch] = []
+    @ObservationIgnored private var blockTick: Timer?
+    @ObservationIgnored private var blockLastSecond = -1
+    @ObservationIgnored private var driftAlertClear: Timer?
+
+    var blockActive: Bool { block != nil }
+
     init() {
         link.onState = { [weak self] s in
             Task { @MainActor in self?.handle(state: s) }
@@ -72,6 +98,7 @@ final class VertexModel {
             beginRecording()
         case .idle, .failed, .bluetoothOff, .unauthorized:
             if was == .streaming || isRecording { endRecording() }
+            if blockActive { endBlock() }   // the board is gone — seal the block honestly and stop
             clearNudge()
         default:
             break
@@ -135,6 +162,119 @@ final class VertexModel {
         if bounce, level != .none {
             NSApp.requestUserAttention(.informationalRequest)
         }
+    }
+
+    // MARK: Focus block lifecycle
+
+    /// Start a block of `minutes` minutes. This is the ONLY thing that turns on the drift
+    /// intervention. Starting a block is also what declares `effortful = true` for the block's
+    /// epochs — the honest, user-supplied context `resolveState` needs.
+    func startBlock(minutes: Int? = nil) {
+        endBlock()   // never stack two blocks
+
+        let n = minutes ?? blockConfig.plannedMinutes
+        let start = Date()
+        block = ActiveBlock(startedAt: start, plannedMinutes: n)
+        lastRecap = nil
+        driftAlert = false
+        drift = DriftIntervention(driftDwellSec: blockConfig.driftDwellSec,
+                                  debounceSec: blockConfig.debounceSec)
+        blockBuilder = EpochBuilder()
+        blockEpochs = []
+        blockLastSecond = -1
+
+        let t = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+            MainActor.assumeIsolated { self.blockStep() }
+        }
+        RunLoop.main.add(t, forMode: .common)
+        blockTick = t
+    }
+
+    /// One block epoch per wall-clock second, built from the live link's last metrics through the
+    /// shared `EpochBuilder` — the same DSP path the recorder uses. `effortful: true` is the block's
+    /// declaration, not an inference from the signal.
+    private func blockStep() {
+        guard let b = block else { return }
+        let sec = Int(Date().timeIntervalSince(b.startedAt))
+        guard sec > blockLastSecond else { return }
+        blockLastSecond = sec
+
+        let epoch = blockBuilder.close(second: Double(sec), metrics: snap.metrics, effortful: true)
+        blockEpochs.append(epoch)
+
+        // Drift detection off the gated, smoothed state, through the shared `driftStep` gate. A
+        // closed gate is `.withheld` here — never `.daydream` — so nothing fires behind a gate; and
+        // `driftStep` refuses to advance the detector at all unless a block is active.
+        if driftStep(&drift, blockActive: true, state: epoch.state, dt: 1.0) {
+            block?.driftCatches += 1
+            fireDriftNudge()
+        }
+    }
+
+    /// The intervention itself: a subtle sound, a menu-bar state change, and a haptic hook. The pure
+    /// `DriftIntervention` already decided this should fire and counted it; this only performs it.
+    private func fireDriftNudge() {
+        // A subtle, non-alarming cue — a soft named system sound, not the alert beep.
+        (NSSound(named: "Tink") ?? NSSound(named: "Pop"))?.play()
+
+        // Haptic hook for later. On a trackpad this is felt; elsewhere it is a no-op. Left here as the
+        // seam a future richer haptic pattern plugs into.
+        NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .default)
+
+        // The menu-bar state change: DRIFTING, held briefly so it is glanceable, then cleared.
+        driftAlert = true
+        driftAlertClear?.invalidate()
+        let t = Timer.scheduledTimer(withTimeInterval: 8, repeats: false) { _ in
+            MainActor.assumeIsolated { self.driftAlert = false }
+        }
+        RunLoop.main.add(t, forMode: .common)
+        driftAlertClear = t
+    }
+
+    /// End the block: compute the recap from the block's own epochs, persist it as a SessionRecord,
+    /// and stop the loop. Safe to call when no block is active.
+    func endBlock() {
+        blockTick?.invalidate()
+        blockTick = nil
+        driftAlertClear?.invalidate()
+        driftAlertClear = nil
+        driftAlert = false
+
+        guard let b = block else { return }
+
+        lastRecap = recap(epochs: blockEpochs, driftCatches: b.driftCatches)
+        persistBlock(b, epochs: blockEpochs)
+
+        block = nil
+        drift.reset()
+        blockEpochs = []
+    }
+
+    /// Save the block as a SessionRecord through the existing Store — same schema, same gates. A
+    /// withheld epoch keeps its null score. Requires a granted folder and a real block; otherwise the
+    /// live recap still stands, nothing is lost.
+    private func persistBlock(_ b: ActiveBlock, epochs: [Epoch]) {
+        guard let store, epochs.count >= 30 else { return }
+        let rec = SessionRecord(
+            synthetic: false,
+            syntheticNote: nil,
+            startedAt: b.startedAt,
+            endedAt: b.startedAt.addingTimeInterval(Double(epochs.count)),
+            device: DeviceInfo(
+                name: snap.info?.name ?? Vertex.deviceName,
+                sps: snap.info?.sps ?? Int(snap.fs),
+                firmware: snap.info?.fw
+            ),
+            baseline: snap.metrics.baseline.map {
+                BaselineInfo(engagement: $0, clench: snap.metrics.clenchBaseline,
+                             frozenAt: b.startedAt.addingTimeInterval(20), reused: false)
+            },
+            epochs: epochs,
+            activities: [],
+            markers: []
+        )
+        try? store.write(rec)
+        onSessionWritten?()
     }
 
     // MARK: Recording lifecycle
@@ -266,7 +406,19 @@ final class VertexModel {
         case .connecting: return "CONNECTING"
         case .interrogating: return "READING BOARD"
         case .failed: return "FAULT"
-        case .streaming: return blockingGate == nil ? "LIVE" : "WITHHELD"
+        case .streaming:
+            if driftAlert { return "DRIFTING" }
+            return blockingGate == nil ? "LIVE" : "WITHHELD"
         }
     }
+
+    // MARK: Block-derived readouts (live model only — never persisted or synthetic data)
+
+    /// The block's elapsed / planned, for the menu bar. Nil when no block is running.
+    var blockProgress: (elapsed: TimeInterval, planned: TimeInterval)? {
+        guard let block else { return nil }
+        return (block.elapsed(at: Date()), Double(block.plannedMinutes) * 60)
+    }
+
+    var blockDriftCatches: Int { block?.driftCatches ?? 0 }
 }
