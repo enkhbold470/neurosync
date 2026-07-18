@@ -38,15 +38,15 @@ nonisolated struct FocusNudge: Equatable {
         var message: String? {
             switch self {
             case .none: return nil
-            case .breather: return "Focus has been low for a while — take a 5-minute break."
-            case .walk: return "Focus is very low — step out for a 10-minute walk."
+            case .breather: return "You've been under your line a while — a 5-minute reset usually brings it back."
+            case .walk: return "Still low — a short walk is the fastest way back in."
             }
         }
 
         var icon: String {
             switch self {
             case .none: return "checkmark.circle"
-            case .breather: return "exclamationmark.triangle.fill"
+            case .breather: return "cup.and.saucer.fill"
             case .walk: return "figure.walk"
             }
         }
