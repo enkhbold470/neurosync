@@ -1,0 +1,94 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`formatTargetedDeployment > every header value > deploy 1`] = `
+"[38;2;62;163;75m▌[39m Deploying code to deployment:
+[38;2;62;163;75m▌[39m [1m[48;2;210;236;187m[38;2;43;101;54m Development [39m[49m[22m [1mhappy-animal-123[22m (]8;;https://dashboard.convex.dev/t/my-team/my-project/happy-animal-123\\[4mdashboard[24m]8;;\\)
+[38;2;62;163;75m▌[39m [2m└─[22m [2m[4m]8;;https://happy-animal-123.convex.cloud\\https://happy-animal-123.convex.cloud]8;;\\[24m[22m"
+`;
+
+exports[`formatTargetedDeployment > every header value > dev 1`] = `
+"[38;2;62;163;75m▌[39m Developing against deployment:
+[38;2;62;163;75m▌[39m [1m[48;2;210;236;187m[38;2;43;101;54m Development [39m[49m[22m [1mhappy-animal-123[22m (]8;;https://dashboard.convex.dev/t/my-team/my-project/happy-animal-123\\[4mdashboard[24m]8;;\\)
+[38;2;62;163;75m▌[39m [2m└─[22m [2m[4m]8;;https://happy-animal-123.convex.cloud\\https://happy-animal-123.convex.cloud]8;;\\[24m[22m"
+`;
+
+exports[`formatTargetedDeployment > every header value > logs 1`] = `
+"[38;2;62;163;75m▌[39m Showing logs of deployment:
+[38;2;62;163;75m▌[39m [1m[48;2;210;236;187m[38;2;43;101;54m Development [39m[49m[22m [1mhappy-animal-123[22m (]8;;https://dashboard.convex.dev/t/my-team/my-project/happy-animal-123\\[4mdashboard[24m]8;;\\)
+[38;2;62;163;75m▌[39m [2m└─[22m [2m[4m]8;;https://happy-animal-123.convex.cloud\\https://happy-animal-123.convex.cloud]8;;\\[24m[22m"
+`;
+
+exports[`formatTargetedDeployment > every header value > no header (used after logFinishedStep) 1`] = `
+"[38;2;62;163;75m▌[39m [1m[48;2;210;236;187m[38;2;43;101;54m Development [39m[49m[22m [1mhappy-animal-123[22m (]8;;https://dashboard.convex.dev/t/my-team/my-project/happy-animal-123\\[4mdashboard[24m]8;;\\)
+[38;2;62;163;75m▌[39m [2m└─[22m [2m[4m]8;;https://happy-animal-123.convex.cloud\\https://happy-animal-123.convex.cloud]8;;\\[24m[22m"
+`;
+
+exports[`formatTargetedDeployment > standard terminal > anonymous deployment 1`] = `
+"[38;2;62;163;75m▌[39m [1m[48;2;210;236;187m[38;2;43;101;54m Local [39m[49m[22m Port [1m3210[22m • No Convex account (run [1mnpx convex login[22m to link to a project)
+[38;2;62;163;75m▌[39m [2m└─[22m [2m[4m]8;;http://127.0.0.1:3210\\http://127.0.0.1:3210]8;;\\[24m[22m"
+`;
+
+exports[`formatTargetedDeployment > standard terminal > custom deployment with team and project 1`] = `
+"[38;2;152;154;163m▌[39m [1m[48;2;223;226;233m[38;2;41;43;48m Custom [39m[49m[22m [2mmy-team:my-project:[22m[1mmy-staging-shadow[22m (]8;;https://dashboard.convex.dev/t/my-team/my-project/playful-otter-999\\[4mdashboard[24m]8;;\\)
+[38;2;152;154;163m▌[39m [2m└─[22m [2m[4m]8;;https://happy-animal-123.convex.cloud\\https://happy-animal-123.convex.cloud]8;;\\[24m[22m"
+`;
+
+exports[`formatTargetedDeployment > standard terminal > default dev deployment shows reference and (dev) alias 1`] = `
+"[38;2;62;163;75m▌[39m [1m[48;2;210;236;187m[38;2;43;101;54m Development [39m[49m[22m [2mmy-team:my-project:[22m[1mdev/nicolas[22m [2m([22m[1mdev[22m[2m)[22m (]8;;https://dashboard.convex.dev/t/my-team/my-project/happy-animal-123\\[4mdashboard[24m]8;;\\)
+[38;2;62;163;75m▌[39m [2m└─[22m [2m[4m]8;;https://happy-animal-123.convex.cloud\\https://happy-animal-123.convex.cloud]8;;\\[24m[22m"
+`;
+
+exports[`formatTargetedDeployment > standard terminal > default prod deployment shows reference and (prod) alias 1`] = `
+"[38;2;139;33;241m▌[39m [1m[48;2;234;202;231m[38;2;100;26;169m Production [39m[49m[22m [2mmy-team:my-project:[22m[1mproduction[22m [2m([22m[1mprod[22m[2m)[22m (]8;;https://dashboard.convex.dev/t/my-team/my-project/happy-animal-123\\[4mdashboard[24m]8;;\\)
+[38;2;139;33;241m▌[39m [2m└─[22m [2m[4m]8;;https://happy-animal-123.convex.cloud\\https://happy-animal-123.convex.cloud]8;;\\[24m[22m"
+`;
+
+exports[`formatTargetedDeployment > standard terminal > dev deployment without team/project slugs 1`] = `
+"[38;2;62;163;75m▌[39m [1m[48;2;210;236;187m[38;2;43;101;54m Development [39m[49m[22m [1mhappy-animal-123[22m (]8;;https://dashboard.convex.dev/d/happy-animal-123\\[4mdashboard[24m]8;;\\)
+[38;2;62;163;75m▌[39m [2m└─[22m [2m[4m]8;;https://happy-animal-123.convex.cloud\\https://happy-animal-123.convex.cloud]8;;\\[24m[22m"
+`;
+
+exports[`formatTargetedDeployment > standard terminal > local deployment with team and project 1`] = `
+"[38;2;62;163;75m▌[39m [1m[48;2;210;236;187m[38;2;43;101;54m Local [39m[49m[22m Port [1m3210[22m • in my-team[2m:[22mmy-project (]8;;https://dashboard.convex.dev/t/my-team/my-project/local\\[4mdashboard[24m]8;;\\)
+[38;2;62;163;75m▌[39m [2m└─[22m [2m[4m]8;;http://127.0.0.1:3210\\http://127.0.0.1:3210]8;;\\[24m[22m"
+`;
+
+exports[`formatTargetedDeployment > standard terminal > local deployment without team/project slugs 1`] = `
+"[38;2;62;163;75m▌[39m [1m[48;2;210;236;187m[38;2;43;101;54m Local [39m[49m[22m Port [1m3210[22m (]8;;https://dashboard.convex.dev/d/local\\[4mdashboard[24m]8;;\\)
+[38;2;62;163;75m▌[39m [2m└─[22m [2m[4m]8;;http://127.0.0.1:3210\\http://127.0.0.1:3210]8;;\\[24m[22m"
+`;
+
+exports[`formatTargetedDeployment > standard terminal > non-default dev deployment shows reference without alias 1`] = `
+"[38;2;62;163;75m▌[39m [1m[48;2;210;236;187m[38;2;43;101;54m Development [39m[49m[22m [2mmy-team:my-project:[22m[1mdev/staging-test[22m (]8;;https://dashboard.convex.dev/t/my-team/my-project/happy-animal-123\\[4mdashboard[24m]8;;\\)
+[38;2;62;163;75m▌[39m [2m└─[22m [2m[4m]8;;https://happy-animal-123.convex.cloud\\https://happy-animal-123.convex.cloud]8;;\\[24m[22m"
+`;
+
+exports[`formatTargetedDeployment > standard terminal > non-default prod deployment shows reference without alias 1`] = `
+"[38;2;139;33;241m▌[39m [1m[48;2;234;202;231m[38;2;100;26;169m Production [39m[49m[22m [2mmy-team:my-project:[22m[1mprod-shadow[22m (]8;;https://dashboard.convex.dev/t/my-team/my-project/happy-animal-123\\[4mdashboard[24m]8;;\\)
+[38;2;139;33;241m▌[39m [2m└─[22m [2m[4m]8;;https://happy-animal-123.convex.cloud\\https://happy-animal-123.convex.cloud]8;;\\[24m[22m"
+`;
+
+exports[`formatTargetedDeployment > standard terminal > preview deployment with team and project 1`] = `
+"[38;2;226;87;6m▌[39m [1m[48;2;252;237;215m[38;2;147;54;21m Preview [39m[49m[22m [2mmy-team:my-project:[22m[1mpreview/pr-42[22m (]8;;https://dashboard.convex.dev/t/my-team/my-project/happy-otter-123\\[4mdashboard[24m]8;;\\)
+[38;2;226;87;6m▌[39m [2m└─[22m [2m[4m]8;;https://happy-animal-123.convex.cloud\\https://happy-animal-123.convex.cloud]8;;\\[24m[22m"
+`;
+
+exports[`formatTargetedDeployment > standard terminal > preview deployment without a reference falls back to deploymentName 1`] = `
+"[38;2;226;87;6m▌[39m [1m[48;2;252;237;215m[38;2;147;54;21m Preview [39m[49m[22m [1mhappy-otter-123[22m (]8;;https://dashboard.convex.dev/t/my-team/my-project/happy-otter-123\\[4mdashboard[24m]8;;\\)
+[38;2;226;87;6m▌[39m [2m└─[22m [2m[4m]8;;https://happy-animal-123.convex.cloud\\https://happy-animal-123.convex.cloud]8;;\\[24m[22m"
+`;
+
+exports[`formatTargetedDeployment > standard terminal > self-hosted deployment 1`] = `
+"[38;2;152;154;163m▌[39m Deploying code to deployment:
+[38;2;152;154;163m▌[39m [2m└─[22m [2m[4m]8;;https://convex.my-company.com\\https://convex.my-company.com]8;;\\[24m[22m"
+`;
+
+exports[`formatTargetedDeployment > terminals with partial feature support > without colors 1`] = `
+"▌ [Development] happy-animal-123 (]8;;https://dashboard.convex.dev/t/my-team/my-project/happy-animal-123\\dashboard]8;;\\)
+▌ └─ ]8;;https://happy-animal-123.convex.cloud\\https://happy-animal-123.convex.cloud]8;;\\"
+`;
+
+exports[`formatTargetedDeployment > terminals with partial feature support > without link support 1`] = `
+"[38;2;62;163;75m▌[39m [1m[48;2;210;236;187m[38;2;43;101;54m Development [39m[49m[22m [1mhappy-animal-123[22m (dashboard: https://dashboard.convex.dev/t/my-team/my-project/happy-animal-123)
+[38;2;62;163;75m▌[39m [2m└─[22m [2m[4mhttps://happy-animal-123.convex.cloud[24m[22m"
+`;

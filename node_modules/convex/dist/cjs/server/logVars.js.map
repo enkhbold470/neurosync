@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../src/server/logVars.ts"],
+  "sourcesContent": ["const REQUEST_ID = Symbol(\"var.requestId\");\nconst IP = Symbol(\"var.ip\");\nconst USER_AGENT = Symbol(\"var.userAgent\");\nconst NOW = Symbol(\"var.now\");\n\nexport type LogVar =\n  | typeof REQUEST_ID\n  | typeof IP\n  | typeof USER_AGENT\n  | typeof NOW;\n\nexport const varNames: Record<symbol, string> = {\n  [REQUEST_ID]: \"requestId\",\n  [IP]: \"ip\",\n  [USER_AGENT]: \"userAgent\",\n  [NOW]: \"now\",\n};\n\nexport const vars = {\n  /** Resolved to the request ID. */\n  requestId: REQUEST_ID,\n  /** Resolved to the client's IP address. */\n  ip: IP,\n  /** Resolved to the client's User-Agent header. */\n  userAgent: USER_AGENT,\n  /**\n   * Resolved to the current server timestamp, as milliseconds from the\n   * Unix epoch.\n   */\n  now: NOW,\n} as const;\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA,MAAM,aAAa,OAAO,eAAe;AACzC,MAAM,KAAK,OAAO,QAAQ;AAC1B,MAAM,aAAa,OAAO,eAAe;AACzC,MAAM,MAAM,OAAO,SAAS;AAQrB,MAAM,WAAmC;AAAA,EAC9C,CAAC,UAAU,GAAG;AAAA,EACd,CAAC,EAAE,GAAG;AAAA,EACN,CAAC,UAAU,GAAG;AAAA,EACd,CAAC,GAAG,GAAG;AACT;AAEO,MAAM,OAAO;AAAA;AAAA,EAElB,WAAW;AAAA;AAAA,EAEX,IAAI;AAAA;AAAA,EAEJ,WAAW;AAAA;AAAA;AAAA;AAAA;AAAA,EAKX,KAAK;AACP;",
+  "names": []
+}
