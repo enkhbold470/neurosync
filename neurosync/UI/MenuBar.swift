@@ -79,6 +79,10 @@ struct MenuBarPanel: View {
 
             Divider()
 
+            FocusBlockSection(model: model)
+
+            Divider()
+
             HStack(spacing: 8) {
                 if model.isConnected {
                     Button("Recalibrate") { model.recalibrate() }
@@ -93,5 +97,112 @@ struct MenuBarPanel: View {
         }
         .padding(14)
         .frame(width: 280)
+    }
+}
+
+// MARK: - Focus block
+
+/// Start a block, watch it run, read its recap — all from the live model only. A block is the honest
+/// source of the `effortful` context the drift intervention needs; it is never inferred from signal.
+struct FocusBlockSection: View {
+    let model: VertexModel
+
+    private static let presets = [15, 25, 50]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("FOCUS BLOCK")
+                    .font(.data(9, .bold))
+                    .tracking(1.2)
+                Spacer()
+                if model.driftAlert {
+                    Label("DRIFTING", systemImage: "cloud.fill")
+                        .font(.data(9, .semibold))
+                        .tracking(1)
+                        .foregroundStyle(Ink.warn)
+                }
+            }
+
+            if let p = model.blockProgress {
+                // Running.
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(Self.clock(p.elapsed))
+                        .font(.data(20, .bold))
+                    Text("/ \(Self.clock(p.planned))")
+                        .font(.data(11))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("End") { model.endBlock() }
+                }
+                Text(model.blockDriftCatches == 1
+                     ? "1 drift caught"
+                     : "\(model.blockDriftCatches) drifts caught")
+                    .font(.label(10))
+                    .foregroundStyle(.secondary)
+            } else if let r = model.lastRecap {
+                // Just ended — the recap.
+                RecapView(recap: r)
+                HStack(spacing: 8) {
+                    ForEach(Self.presets, id: \.self) { m in
+                        Button("\(m)m") { model.startBlock(minutes: m) }
+                            .disabled(!model.isConnected)
+                    }
+                    Spacer()
+                }
+                .font(.label(11))
+            } else {
+                // Idle.
+                Text(model.isConnected
+                     ? "Declare a block you mean to concentrate in. A subtle nudge if you drift."
+                     : "Connect a board to run a focus block.")
+                    .font(.label(11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 8) {
+                    ForEach(Self.presets, id: \.self) { m in
+                        Button("\(m)m") { model.startBlock(minutes: m) }
+                            .disabled(!model.isConnected)
+                    }
+                    Spacer()
+                }
+                .font(.label(11))
+            }
+        }
+    }
+
+    /// mm:ss.
+    static func clock(_ t: TimeInterval) -> String {
+        let s = max(0, Int(t))
+        return String(format: "%d:%02d", s / 60, s % 60)
+    }
+}
+
+/// One honest end-of-block summary. Every number is counted from the real DSP epoch stream.
+struct RecapView: View {
+    let recap: BlockRecap
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 16) {
+                stat(String(format: "%.0f", recap.minutesFocused), "MIN FOCUSED")
+                stat("\(recap.driftCatches)", "DRIFTS")
+                stat(String(format: "%.0f", recap.longestFocusedStretchMin), "LONGEST MIN")
+            }
+            Text(recap.withheldSeconds > 0
+                 ? String(format: "%.0f%% coverage — %d s withheld and not counted as focus.",
+                          recap.coverage * 100, recap.withheldSeconds)
+                 : "Full coverage.")
+                .font(.label(10))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func stat(_ value: String, _ label: String) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(value).font(.data(18, .bold))
+            Text(label).font(.data(8, .semibold)).tracking(0.8).foregroundStyle(.secondary)
+        }
     }
 }
