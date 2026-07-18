@@ -51,7 +51,7 @@ struct MenuBarPanel: View {
                                          ? Ink.amber : Ink.warn)
                     Text(gate.detail)
                         .font(.label(11))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Ink.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             } else if model.isConnected {
@@ -60,20 +60,20 @@ struct MenuBarPanel: View {
                         .font(.data(30, .bold))
                     Text("%")
                         .font(.data(13))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Ink.muted)
                     Spacer()
                     Text(model.metrics.inFlow ? "IN FLOW" : "BELOW FLOW LINE")
                         .font(.data(9, .semibold))
                         .tracking(1)
-                        .foregroundStyle(model.metrics.inFlow ? Ink.amber : .secondary)
+                        .foregroundStyle(model.metrics.inFlow ? Ink.amber : Ink.muted)
                 }
                 Text("50 = your own baseline, this session.")
                     .font(.label(10))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Ink.muted)
             } else {
                 Text("No board. This shows a number only while a Vertex is streaming from a head.")
                     .font(.label(11))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Ink.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -85,13 +85,13 @@ struct MenuBarPanel: View {
 
             HStack(spacing: 8) {
                 if model.isConnected {
-                    Button("Recalibrate") { model.recalibrate() }
-                    Button("Disconnect") { model.disconnect() }
+                    Button { model.recalibrate() } label: { Label("Recalibrate", systemImage: "arrow.clockwise") }
+                    Button { model.disconnect() } label: { Label("Disconnect", systemImage: "xmark.circle") }
                 } else {
-                    Button("Connect") { model.connect() }
+                    Button { model.connect() } label: { Label("Connect", systemImage: "antenna.radiowaves.left.and.right") }
                 }
                 Spacer()
-                Button("Quit") { NSApplication.shared.terminate(nil) }
+                Button { NSApplication.shared.terminate(nil) } label: { Label("Quit", systemImage: "power") }
             }
             .font(.label(11))
         }
@@ -131,7 +131,7 @@ struct FocusBlockSection: View {
                         .font(.data(20, .bold))
                     Text("/ \(Self.clock(p.planned))")
                         .font(.data(11))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Ink.muted)
                     Spacer()
                     Button("End") { model.endBlock() }
                 }
@@ -139,7 +139,7 @@ struct FocusBlockSection: View {
                      ? "1 drift caught"
                      : "\(model.blockDriftCatches) drifts caught")
                     .font(.label(10))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Ink.muted)
             } else if let r = model.lastRecap {
                 // Just ended — the recap.
                 RecapView(recap: r)
@@ -157,7 +157,7 @@ struct FocusBlockSection: View {
                      ? "Declare a block you mean to concentrate in. A subtle nudge if you drift."
                      : "Connect a board to run a focus block.")
                     .font(.label(11))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Ink.muted)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 8) {
                     ForEach(Self.presets, id: \.self) { m in
@@ -194,7 +194,7 @@ struct RecapView: View {
                           recap.coverage * 100, recap.withheldSeconds)
                  : "Full coverage.")
                 .font(.label(10))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Ink.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -202,7 +202,7 @@ struct RecapView: View {
     private func stat(_ value: String, _ label: String) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(value).font(.data(18, .bold))
-            Text(label).font(.data(8, .semibold)).tracking(0.8).foregroundStyle(.secondary)
+            Text(label).font(.data(8, .semibold)).tracking(0.8).foregroundStyle(Ink.muted)
         }
     }
 }

@@ -91,6 +91,19 @@ private func fixture() -> (FocusMetrics, [Double]) {
     #expect(FileManager.default.fileExists(atPath: path))
 }
 
+/// The connect hero in both appearances — proves the adaptive tokens flip and stay legible.
+@MainActor
+@Test func snapshotConnectAppearances() throws {
+    for scheme in [ColorScheme.light, .dark] {
+        let name = scheme == .light ? "01a-connect-light.png" : "01b-connect-dark.png"
+        let v = ContentView(model: VertexModel(), days: DayModel())
+            .environment(\.colorScheme, scheme)
+        let path = try render(v, size: CGSize(width: 1180, height: 760), to: name)
+        print("SNAPSHOT \(path)")
+        #expect(FileManager.default.fileExists(atPath: path))
+    }
+}
+
 @MainActor
 @Test func snapshotInstrument() throws {
     let (m, wave) = fixture()
