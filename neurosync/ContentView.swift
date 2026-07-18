@@ -62,7 +62,15 @@ struct ContentView: View {
             // here rather than constructed inside VertexModel, so the link has no way to reach the
             // filesystem on its own.
             model.store = days.store
-            model.onSessionWritten = { days.load() }
+
+            // Opt-in cloud mirror. Off (a true no-op) unless a CONVEX_URL is configured and a user is
+            // signed in — the instrument stays local-first. Uploads local sessions, never synthetic.
+            let cloud = CloudSyncController(store: days.store)
+            model.onSessionWritten = {
+                days.load()
+                Task { await cloud.syncPending() }
+            }
+            await cloud.syncPending()
         }
     }
 }

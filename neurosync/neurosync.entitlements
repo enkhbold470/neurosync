@@ -31,5 +31,11 @@
 	     arrive with no OAuth and no API key. Read-only: NeuroSync never writes an event. -->
 	<key>com.apple.security.personal-information.calendars</key>
 	<true/>
+
+	<!-- Outgoing network, for OPT-IN cloud sync (Convex WebSocket + auth). Without it a sandboxed
+	     app's network I/O fails at RUNTIME, not build time. Sync is off unless the user signs in and
+	     a CONVEX_URL is configured; the instrument itself stays fully local-first. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
 </dict>
 </plist>

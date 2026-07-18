@@ -1,0 +1,13 @@
+{
+  "name": "neurosync-cloud",
+  "version": "0.3.0",
+  "private": true,
+  "description": "NeuroSync's Convex backend (its OWN deployment — never avid-guineapig-274). See CLOUD_SETUP.md.",
+  "scripts": {
+    "dev": "convex dev",
+    "deploy": "convex deploy"
+  },
+  "dependencies": {
+    "convex": "^1.17.0"
+  }
+}
