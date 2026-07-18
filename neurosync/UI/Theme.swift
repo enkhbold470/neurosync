@@ -2,70 +2,117 @@
 //  Theme.swift
 //  neurosync
 //
-//  "Instrument, not gadget. No RGB. No mysticism. Lab-bench honesty in consumer hardware.
-//   If it wouldn't look at home next to an oscilloscope, it doesn't wear the name."
-//   — NeuroFocus Manifesto IV
+//  The design system, in one place. Every colour, radius, space and type role the app uses is a
+//  token here; surfaces pull from these and from `Glass.swift`, never from hardcoded values.
 //
-//  Hence: one accent colour, hairline rules, monospace for every number, and no gradient,
-//  glow or glass anywhere. Colours carried over from the NeuroFocus design system.
+//  Colours are ADAPTIVE — each resolves per system appearance (Light/Dark, with Increase-Contrast
+//  variants). Because the whole app already flows colour through `Ink.*`, this file is the single
+//  lever that turns NeuroSync from dark-only into a Liquid-Glass instrument that follows the system.
 //
 
 import SwiftUI
+import AppKit
+
+// MARK: - Adaptive colour plumbing
+
+private func srgb(_ r: Double, _ g: Double, _ b: Double, _ a: Double = 1) -> NSColor {
+    NSColor(srgbRed: r, green: g, blue: b, alpha: a)
+}
+
+extension Color {
+    /// Resolves to `light`/`dark` per appearance; the optional HC values feed Increase Contrast.
+    static func adaptive(light: NSColor, dark: NSColor,
+                         lightHC: NSColor? = nil, darkHC: NSColor? = nil) -> Color {
+        Color(nsColor: NSColor(name: nil) { appearance in
+            let name = appearance.bestMatch(from: [
+                .aqua, .darkAqua,
+                .accessibilityHighContrastAqua, .accessibilityHighContrastDarkAqua
+            ]) ?? .aqua
+            switch name {
+            case .accessibilityHighContrastAqua:     return lightHC ?? light
+            case .accessibilityHighContrastDarkAqua: return darkHC ?? dark
+            case .darkAqua:                           return dark
+            default:                                  return light
+            }
+        })
+    }
+}
+
+// MARK: - Tokens
 
 enum Ink {
-    static let bg = Color(red: 0.020, green: 0.020, blue: 0.024)        // #050506
-    static let panel = Color(red: 0.039, green: 0.039, blue: 0.047)     // #0a0a0c
-    static let amber = Color(red: 0.945, green: 0.698, blue: 0.478)     // #F1B27A
-    static let text = Color(red: 0.980, green: 0.980, blue: 0.980)      // #fafafa
-    static let dim = Color(red: 0.635, green: 0.627, blue: 0.671)       // #a2a0ab
-    static let muted = Color(red: 0.435, green: 0.427, blue: 0.471)     // #6f6d78
-    static let rule = Color.white.opacity(0.08)
+    // Surfaces
+    static let bg = Color.adaptive(light: srgb(0.949, 0.949, 0.965), dark: srgb(0.020, 0.020, 0.024))
+    /// Solid card fill — also the Reduce-Transparency fallback for glass cards.
+    static let panel = Color.adaptive(light: srgb(1, 1, 1), dark: srgb(0.059, 0.059, 0.075))
+    /// A quiet solid inset behind Canvas plots so traces stay crisp over glass.
+    static let plotBacking = Color.adaptive(light: srgb(1, 1, 1), dark: srgb(0.039, 0.039, 0.051))
 
-    /// The one non-amber signal colour, used only to mark a withheld/failed gate.
-    /// It is a warning, not decoration.
-    static let warn = Color(red: 0.859, green: 0.463, blue: 0.408)
+    // Accent (the one saturated colour — engagement)
+    static let amber = Color.adaptive(light: srgb(0.663, 0.416, 0.090), dark: srgb(0.945, 0.698, 0.478))
+    /// Text/icon colour placed ON the amber accent.
+    static let onAccent = Color.adaptive(light: srgb(1, 1, 1), dark: srgb(0.020, 0.020, 0.024))
 
-    /// Corner radii, matched to the neurofocus.dev landing page tokens: `--radius: 12px` for small
-    /// elements (buttons, chips, pips), `--radius-card: 24px` for content cards.
+    // Text
+    static let text = Color.adaptive(light: srgb(0.063, 0.063, 0.078), dark: srgb(0.980, 0.980, 0.980),
+                                     lightHC: srgb(0, 0, 0), darkHC: srgb(1, 1, 1))
+    static let dim = Color.adaptive(light: srgb(0.333, 0.333, 0.373), dark: srgb(0.635, 0.627, 0.671),
+                                    lightHC: srgb(0.20, 0.20, 0.24), darkHC: srgb(0.80, 0.80, 0.84))
+    static let muted = Color.adaptive(light: srgb(0.424, 0.424, 0.463), dark: srgb(0.435, 0.427, 0.471),
+                                      lightHC: srgb(0.28, 0.28, 0.32), darkHC: srgb(0.62, 0.61, 0.66))
+    static let rule = Color.adaptive(light: srgb(0, 0, 0, 0.10), dark: srgb(1, 1, 1, 0.08))
+
+    /// The one non-amber signal colour, for a withheld/failed gate. A warning, not decoration.
+    static let warn = Color.adaptive(light: srgb(0.769, 0.239, 0.180), dark: srgb(0.859, 0.463, 0.408))
+
+    // Corner radii — small elements vs. content cards.
     static let radiusCard: CGFloat = 20
     static let radius: CGFloat = 11
 
-    /// The day-timeline state palette. Desaturated on purpose — this is a lane on an instrument,
-    /// not a productivity app's mood ring. Amber is still the only saturated colour, and it is
-    /// still reserved for the one thing worth reading: engagement.
+    // The day-timeline state palette. Desaturated on purpose; amber stays the only saturated colour.
     static func state(_ s: BrainState) -> Color {
         switch s {
-        case .focused: return amber
-        case .daydream: return Color(red: 0.478, green: 0.494, blue: 0.667)   // cool slate-violet
-        case .calm: return Color(red: 0.416, green: 0.545, blue: 0.545)       // muted teal
+        case .focused:  return amber
+        case .daydream: return .adaptive(light: srgb(0.357, 0.369, 0.549), dark: srgb(0.478, 0.494, 0.667))
+        case .calm:     return .adaptive(light: srgb(0.184, 0.431, 0.431), dark: srgb(0.416, 0.545, 0.545))
         case .clenched: return warn
-        case .neutral: return Color(red: 0.290, green: 0.286, blue: 0.318)
-        case .withheld: return Color.white.opacity(0.05)
+        case .neutral:  return .adaptive(light: srgb(0.639, 0.635, 0.675), dark: srgb(0.290, 0.286, 0.318))
+        case .withheld: return .adaptive(light: srgb(0, 0, 0, 0.06), dark: srgb(1, 1, 1, 0.05))
         }
     }
 
     static func activity(_ k: ActivityKind) -> Color {
         switch k {
-        case .coding: return Color(red: 0.945, green: 0.698, blue: 0.478).opacity(0.55)
-        case .design: return Color(red: 0.588, green: 0.545, blue: 0.741).opacity(0.55)
-        case .meeting: return Color(red: 0.416, green: 0.588, blue: 0.647).opacity(0.55)
-        case .onCall: return Color(red: 0.859, green: 0.463, blue: 0.408).opacity(0.5)
-        case .comms: return Color(red: 0.478, green: 0.522, blue: 0.478).opacity(0.5)
-        case .reading: return Color(red: 0.596, green: 0.612, blue: 0.522).opacity(0.5)
-        case .browsing: return Color.white.opacity(0.12)
-        case .breakTime, .walk: return Color(red: 0.416, green: 0.545, blue: 0.545).opacity(0.45)
-        case .unknown: return Color.white.opacity(0.08)
+        case .coding:   return .adaptive(light: srgb(0.663, 0.416, 0.090, 0.50), dark: srgb(0.945, 0.698, 0.478, 0.55))
+        case .design:   return .adaptive(light: srgb(0.435, 0.376, 0.616, 0.50), dark: srgb(0.588, 0.545, 0.741, 0.55))
+        case .meeting:  return .adaptive(light: srgb(0.239, 0.416, 0.478, 0.50), dark: srgb(0.416, 0.588, 0.647, 0.55))
+        case .onCall:   return .adaptive(light: srgb(0.706, 0.298, 0.243, 0.50), dark: srgb(0.859, 0.463, 0.408, 0.50))
+        case .comms:    return .adaptive(light: srgb(0.318, 0.361, 0.318, 0.50), dark: srgb(0.478, 0.522, 0.478, 0.50))
+        case .reading:  return .adaptive(light: srgb(0.408, 0.427, 0.333, 0.50), dark: srgb(0.596, 0.612, 0.522, 0.50))
+        case .browsing: return .adaptive(light: srgb(0, 0, 0, 0.14), dark: srgb(1, 1, 1, 0.12))
+        case .breakTime, .walk: return .adaptive(light: srgb(0.184, 0.431, 0.431, 0.45), dark: srgb(0.416, 0.545, 0.545, 0.45))
+        case .unknown:  return .adaptive(light: srgb(0, 0, 0, 0.10), dark: srgb(1, 1, 1, 0.08))
         }
     }
 
     static func tone(_ t: FindingTone) -> Color {
         switch t {
-        case .bad: return warn
-        case .good: return amber
-        case .caution: return Color(red: 0.792, green: 0.678, blue: 0.443)
+        case .bad:     return warn
+        case .good:    return amber
+        case .caution: return .adaptive(light: srgb(0.616, 0.478, 0.157), dark: srgb(0.792, 0.678, 0.443))
         case .neutral: return dim
         }
     }
+}
+
+/// The spacing scale. Use these instead of ad-hoc literals.
+enum Space {
+    static let xs: CGFloat = 4
+    static let sm: CGFloat = 8
+    static let md: CGFloat = 12
+    static let lg: CGFloat = 14
+    static let xl: CGFloat = 18
+    static let xxl: CGFloat = 22
 }
 
 extension Font {
@@ -78,36 +125,51 @@ extension Font {
     }
 }
 
-/// A bordered instrument panel with a monospace caption.
+// MARK: - Primitives
+
+/// A monospace section caption with an optional SF Symbol mark and trailing note.
+struct SectionCaption: View {
+    let title: String
+    var symbol: String?
+    var trailing: String?
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if let symbol {
+                Image(systemName: symbol)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(Ink.muted)
+            }
+            Text(title)
+                .font(.data(10, .semibold))
+                .tracking(1.4)
+                .foregroundStyle(Ink.muted)
+            Spacer(minLength: 8)
+            if let trailing {
+                Text(trailing)
+                    .font(.data(10))
+                    .tracking(0.8)
+                    .foregroundStyle(Ink.muted)
+            }
+        }
+    }
+}
+
+/// A glass instrument panel with a captioned header.
 struct Panel<Content: View>: View {
     let title: String
+    var symbol: String?
     var trailing: String?
     @ViewBuilder var content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text(title)
-                    .font(.data(10, .semibold))
-                    .tracking(1.4)
-                    .foregroundStyle(Ink.muted)
-                Spacer()
-                if let trailing {
-                    Text(trailing)
-                        .font(.data(10))
-                        .tracking(0.8)
-                        .foregroundStyle(Ink.muted)
-                }
-            }
+        VStack(alignment: .leading, spacing: Space.md) {
+            SectionCaption(title: title, symbol: symbol, trailing: trailing)
             content
         }
-        .padding(18)
+        .padding(Space.xl)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Ink.panel, in: RoundedRectangle(cornerRadius: Ink.radiusCard, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Ink.radiusCard, style: .continuous)
-                .strokeBorder(Ink.rule, lineWidth: 1)
-        )
+        .glassCard()
     }
 }
 

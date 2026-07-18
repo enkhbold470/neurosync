@@ -211,24 +211,6 @@ struct SignalPanel: View {
 
 // MARK: - Chrome
 
-struct InstrumentButton: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.data(11, .semibold))
-            .tracking(0.8)
-            .foregroundStyle(configuration.isPressed ? Ink.bg : Ink.amber)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(configuration.isPressed ? Ink.amber : Color.clear,
-                        in: RoundedRectangle(cornerRadius: Ink.radius, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Ink.radius, style: .continuous)
-                    .strokeBorder(Ink.amber.opacity(0.5), lineWidth: 1)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: Ink.radius, style: .continuous))
-    }
-}
-
 /// The spec strip. Every line here is a claim, so every line here is checkable against the
 /// board that is actually plugged in. `fs` is whatever the board reported — never assumed.
 struct SpecStrip: View {
