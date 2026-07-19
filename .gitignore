@@ -54,3 +54,12 @@ LAUNCH.md
 .env
 .env.*
 !.env.example
+
+# Node / Convex CLI — never commit installed deps or CLI scaffolding.
+node_modules/
+.agents/
+AGENTS.md
+skills-lock.json
+.claude/skills/convex/
+.claude/skills/convex-*/
+convex/_generated/ai/
