@@ -14,13 +14,30 @@ in, the app behaves exactly as before — no network, no account. This is how to
   behind `CloudConfig.canOfferSync`, so the app stays local-first until configured.
 - **`network.client` entitlement**; `.env` / `.env.example`.
 
-## ⚠️ Deployment safety (read once)
-Your `.env` points `CONVEX_URL` / `CONVEX_DEPLOY_KEY` at **`avid-guineapig-274`**, the deployment that
-also hosts the landing-page **waitlist (24 signups, confirmed)**. `convex deploy` replaces the whole
-functions dir — so NeuroSync's `convex/` is a **superset** that vendors `waitlist.ts` + the waitlist
-table. Deploying from here therefore keeps the waitlist. **The rule: NeuroSync is now the SOLE deployer
-of `avid-guineapig-274`. The landing page (`neurofocus-finc`) must NOT run `convex deploy` anymore**
-(it would drop NeuroSync's tables). Keep `convex/waitlist.ts` byte-identical across both repos.
+## ⚠️ Deployment safety (read once — this is a real hazard)
+Your `.env` points `CONVEX_URL` / `CONVEX_DEPLOY_KEY` at **`avid-guineapig-274`**, which is the
+landing page's LIVE deployment. `convex deploy` replaces the **whole** functions dir and schema, so
+deploying NeuroSync's `convex/` there overwrites everything the landing page has. The landing page
+runs MORE than the waitlist:
+
+| Landing-page function/table | Vendored into NeuroSync's `convex/`? |
+|---|---|
+| `waitlist` table + `waitlist.ts` (count/addSignup/importBatch) | ✅ yes (byte-identical) |
+| `posts` table + `posts.ts` (blog: list/get/create/update/remove/views) | ❌ **NO** |
+| `files.ts` (generateUploadUrl/getUrl) | ❌ **NO** |
+
+**So deploying NeuroSync's current `convex/` to `avid-guineapig-274` would DELETE the live blog +
+file-upload functions and try to drop the `posts` table.** The "superset" only ever covered the
+waitlist. Do **not** deploy there as-is.
+
+**Two safe paths (pick one — this is a product decision, it touches the live site):**
+- **(A, recommended) A separate NeuroSync deployment.** Create a fresh Convex project/deployment,
+  point `CONVEX_URL`/`CONVEX_DEPLOY_KEY` at it, deploy NeuroSync's `convex/` there. Zero risk to the
+  landing page. Clean separation. This is what the original plan called for.
+- **(B) True superset on the shared deployment.** Vendor the ENTIRE landing-page backend
+  (`posts.ts`, `files.ts`, the `posts` table) into NeuroSync's `convex/` too, making NeuroSync the
+  SOLE deployer of `avid-guineapig-274` forever (the landing page must never `convex deploy` again).
+  Workable but fragile — every landing-page backend change must be re-vendored here before deploying.
 
 ## The 3 values you must provide (from Clerk)
 Deploy is currently blocked (safely) until Clerk is set — `codegen`/`deploy` refuse because
@@ -37,10 +54,13 @@ cd /Users/inky/Desktop/neurofocus-brain/neurosync
 npx convex env set CLERK_FRONTEND_API_URL "https://<your-frontend-api>.clerk.accounts.dev"
 # 2. verify the waitlist is untouched BEFORE
 npx convex run waitlist:count '{}'          # -> 24
-# 3. deploy NeuroSync's functions (waitlist included → cannot be dropped)
+# 3. deploy — ONLY to a SEPARATE NeuroSync deployment (path A), OR after vendoring the FULL
+#    landing-page backend (path B). NEVER deploy the current convex/ to avid-guineapig-274:
+#    it would delete the blog (posts.ts/files.ts) and drop the posts table.
 npx convex deploy
-# 4. verify the waitlist is STILL 24 AFTER
+# 4. verify the waitlist AND the blog are untouched AFTER
 npx convex run waitlist:count '{}'          # -> 24
+npx convex run posts:listPublished '{}'     # -> the blog posts, unchanged
 ```
 
 ## Point the app at the deployment
