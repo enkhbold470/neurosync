@@ -45,8 +45,12 @@ struct ContentView: View {
                 case .live:
                     if model.isConnected {
                         Instrument(model: model)
+                    } else if model.blockActive {
+                        // A block is running with no board — the headset-free tier. Show it, don't
+                        // fall back to the connect hero.
+                        BlockLiveView(model: model)
                     } else {
-                        ConnectView(model: model)
+                        FocusHome(model: model)
                     }
                 case .day:
                     DayView(model: days)
@@ -318,38 +322,96 @@ private struct RatePicker: View {
     }
 }
 
-// MARK: - Disconnected — the connect hero
+// MARK: - Disconnected — the focus-block home
 
-private struct ConnectView: View {
+/// The front door when no board is streaming. The block is the point: it works with NO headset, so
+/// this leads with "start a block", and offers connecting a Vertex as a secondary upgrade (the brain
+/// layer). No fabricated number appears anywhere here — a headset-free block measures behaviour, not
+/// brains.
+private struct FocusHome: View {
     let model: VertexModel
+    @State private var intention = ""
+
+    private static let presets = [15, 25, 50]
 
     var body: some View {
         VStack(spacing: Space.xxl) {
             Spacer()
 
-            BrandMark(size: 92)
+            BrandMark(size: 84)
 
             VStack(spacing: Space.sm) {
                 Text("Protect your deep work.")
-                    .font(.label(20, .semibold))
+                    .font(.label(22, .semibold))
                     .foregroundStyle(Ink.text)
-                Text("Put on the Vertex band and connect. You'll see your focus the moment it's reading a real signal — and nothing before it is.")
+                Text("Start a focus block — NeuroSync keeps you on task, no headset needed. A quiet nudge when you drift out of your work, and an honest recap when you're done. Connect a Vertex to add the live brain layer.")
                     .font(.label(13))
                     .foregroundStyle(Ink.muted)
                     .multilineTextAlignment(.center)
-                    .frame(maxWidth: 440)
+                    .frame(maxWidth: 500)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            // A quiet, honest scope: flat until a real signal arrives.
-            ScopeView(samples: [], live: false)
-                .frame(height: 84)
-                .frame(maxWidth: 420)
-                .padding(Space.md)
-                .background(Ink.plotBacking, in: RoundedRectangle(cornerRadius: Ink.radius, style: .continuous))
-                .glassCard(radius: Ink.radiusCard)
+            // Optional intention. Naming the work is itself a focus aid, and it heads the recap.
+            TextField("What are you working on? (optional)", text: $intention)
+                .textFieldStyle(.plain)
+                .font(.label(14))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 380)
+                .padding(.vertical, 10)
+                .padding(.horizontal, Space.md)
+                .glassField(radius: Ink.radius)
+                .onSubmit { model.startBlock(minutes: 25, intention: intention) }
 
-            StatusLine(state: model.state)
+            // The primary action: start a block. No headset, no account, no gate.
+            HStack(spacing: Space.md) {
+                ForEach(Self.presets, id: \.self) { m in
+                    Button {
+                        model.startBlock(minutes: m, intention: intention)
+                    } label: {
+                        VStack(spacing: 2) {
+                            Text("\(m)").font(.data(24, .bold))
+                            Text("MIN").font(.data(9, .semibold)).tracking(1.6)
+                        }
+                        .frame(width: 84)
+                    }
+                    .buttonStyle(InstrumentButton(prominent: m == 25, size: .large))
+                }
+            }
+
+            connectAffordance
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(Space.xxl)
+    }
+
+    /// Secondary: connect a board for the brain layer. Adapts to the Bluetooth state, and surfaces a
+    /// failure honestly, but never blocks starting a block.
+    @ViewBuilder private var connectAffordance: some View {
+        VStack(spacing: Space.sm) {
+            switch model.state {
+            case .bluetoothOff, .unauthorized:
+                Button { openBluetoothSettings() } label: {
+                    Label("Open Bluetooth Settings", systemImage: "gearshape")
+                }
+                .buttonStyle(InstrumentButton())
+            default:
+                Button { model.connect() } label: {
+                    HStack(spacing: 8) {
+                        if scanning {
+                            ProgressView().controlSize(.small)
+                            Text("Scanning…")
+                        } else {
+                            Image(systemName: "antenna.radiowaves.left.and.right")
+                            Text("Connect a headset for the brain layer")
+                        }
+                    }
+                }
+                .buttonStyle(InstrumentButton())
+                .disabled(scanning)
+            }
 
             if case .failed(let why) = model.state {
                 Text(why)
@@ -359,40 +421,6 @@ private struct ConnectView: View {
                     .frame(maxWidth: 460)
                     .fixedSize(horizontal: false, vertical: true)
             }
-
-            primaryAction
-
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(Space.xxl)
-    }
-
-    @ViewBuilder private var primaryAction: some View {
-        switch model.state {
-        case .bluetoothOff, .unauthorized:
-            Button {
-                openBluetoothSettings()
-            } label: {
-                Label("Open Bluetooth Settings", systemImage: "gearshape")
-            }
-            .buttonStyle(InstrumentButton(prominent: true, size: .large))
-        default:
-            Button {
-                model.connect()
-            } label: {
-                HStack(spacing: 8) {
-                    if scanning {
-                        ProgressView().controlSize(.small)
-                        Text("Scanning…")
-                    } else {
-                        Image(systemName: "antenna.radiowaves.left.and.right")
-                        Text("Connect to Vertex")
-                    }
-                }
-            }
-            .buttonStyle(InstrumentButton(prominent: true, size: .large))
-            .disabled(scanning)
         }
     }
 
@@ -407,41 +435,132 @@ private struct ConnectView: View {
     }
 }
 
-/// The honest current status, as a symbol + one line — reads in a glance.
-private struct StatusLine: View {
-    let state: LinkState
+// MARK: - A running block, headset-free
 
-    private var text: String {
-        switch state {
-        case .bluetoothOff: return "Bluetooth is off. Turn it on to reach the board."
-        case .unauthorized: return "macOS denied Bluetooth. Grant it in System Settings ▸ Privacy & Security ▸ Bluetooth."
-        case .scanning, .connecting: return "Looking for \(Vertex.deviceName)…"
-        case .interrogating: return "Reading the board…"
-        case .failed: return "Something went wrong. Try again."
-        default: return "Looking for \(Vertex.deviceName). No demo mode — this stays flat until a real signal arrives."
-        }
-    }
-
-    private var symbol: String {
-        switch state {
-        case .bluetoothOff: return "bolt.slash"
-        case .unauthorized: return "hand.raised"
-        case .scanning, .connecting, .interrogating: return "antenna.radiowaves.left.and.right"
-        case .failed: return "exclamationmark.triangle.fill"
-        default: return "dot.radiowaves.left.and.right"
-        }
-    }
+/// The main-window face of a block running with no board. Everything here is a MEASURED fact — time,
+/// and which app you were in. There is no focus number, because there is no brain signal; the
+/// closing line says so plainly. The whole view ticks because the model mutates the block each second.
+private struct BlockLiveView: View {
+    let model: VertexModel
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: symbol).font(.system(size: 12, weight: .semibold)).foregroundStyle(Ink.dim)
-            Text(text)
-                .font(.label(12))
-                .foregroundStyle(Ink.muted)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 460)
-                .fixedSize(horizontal: false, vertical: true)
+        VStack(spacing: Space.xl) {
+            Spacer()
+
+            if let intention = model.blockIntention {
+                Text(intention)
+                    .font(.label(18, .semibold))
+                    .foregroundStyle(Ink.text)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 500)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text("Focus block")
+                    .font(.label(15, .semibold))
+                    .foregroundStyle(Ink.muted)
+            }
+
+            BlockRing(progress: fraction, elapsed: elapsed, planned: planned)
+
+            HStack(spacing: 8) {
+                Image(systemName: contextSymbol)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(contextColor)
+                Text(model.driftAlert ? model.driftAlertMessage : contextLine)
+                    .font(.label(13))
+                    .foregroundStyle(model.driftAlert ? Ink.warn : Ink.muted)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: 460)
+            .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: Space.xxl) {
+                stat("\(model.blockOnTaskSeconds / 60)", "MIN ON TASK")
+                stat("\(model.blockDriftCatches)", model.blockDriftCatches == 1 ? "SLIP" : "SLIPS")
+            }
+
+            Button { model.endBlock() } label: {
+                Label("End block", systemImage: "stop.circle")
+            }
+            .buttonStyle(InstrumentButton(prominent: true, size: .large))
+
+            if !model.isConnected {
+                Label("No headset — this is your behaviour, not a focus score. Connect a Vertex to add the brain layer.",
+                      systemImage: "antenna.radiowaves.left.and.right")
+                    .font(.label(11))
+                    .foregroundStyle(Ink.dim)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 480)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(Space.xxl)
+    }
+
+    private var elapsed: TimeInterval { model.blockProgress?.elapsed ?? 0 }
+    private var planned: TimeInterval { model.blockProgress?.planned ?? 1 }
+    private var fraction: Double { planned > 0 ? Swift.min(1, elapsed / planned) : 0 }
+
+    private var contextLine: String {
+        let app = model.blockCurrentLabel.map { " · \($0)" } ?? ""
+        switch model.blockCurrentContext {
+        case .onTask:  return "On task\(app)"
+        case .away:    return "Away\(app)"
+        case .neutral: return model.blockCurrentLabel ?? "Watching your app context"
+        }
+    }
+
+    private var contextSymbol: String {
+        if model.driftAlert { return "cloud.fill" }
+        switch model.blockCurrentContext {
+        case .onTask:  return "checkmark.circle.fill"
+        case .away:    return "arrow.uturn.backward.circle"
+        case .neutral: return "circle.dashed"
+        }
+    }
+
+    private var contextColor: Color {
+        if model.driftAlert { return Ink.warn }
+        return model.blockCurrentContext == .onTask ? Ink.amber : Ink.dim
+    }
+
+    private func stat(_ value: String, _ label: String) -> some View {
+        VStack(spacing: 2) {
+            Text(value).font(.data(34, .bold)).foregroundStyle(Ink.text).monospacedDigit()
+            Text(label).font(.data(9, .semibold)).tracking(1.2).foregroundStyle(Ink.muted)
+        }
+    }
+}
+
+/// The elapsed / planned ring at the heart of a running block. A time fact, not a focus claim.
+private struct BlockRing: View {
+    let progress: Double
+    let elapsed: TimeInterval
+    let planned: TimeInterval
+
+    var body: some View {
+        ZStack {
+            Circle().stroke(Ink.rule, lineWidth: 10)
+            Circle()
+                .trim(from: 0, to: Swift.max(0.001, progress))
+                .stroke(Ink.amber, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            VStack(spacing: 4) {
+                Text(clock(elapsed)).font(.data(42, .bold)).foregroundStyle(Ink.text).monospacedDigit()
+                Text("/ \(clock(planned))").font(.data(13)).foregroundStyle(Ink.muted).monospacedDigit()
+            }
+        }
+        .frame(width: 220, height: 220)
+        .padding(Space.md)
+        .glassCard(radius: 130)
+    }
+
+    private func clock(_ t: TimeInterval) -> String {
+        let s = Swift.max(0, Int(t))
+        return String(format: "%d:%02d", s / 60, s % 60)
     }
 }
 

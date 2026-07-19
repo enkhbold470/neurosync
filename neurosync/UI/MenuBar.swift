@@ -102,8 +102,9 @@ struct MenuBarPanel: View {
 
 // MARK: - Focus block
 
-/// Start a block, watch it run, read its recap — all from the live model only. A block is the honest
-/// source of the `effortful` context the drift intervention needs; it is never inferred from signal.
+/// Start a block, watch it run, read its recap — all from the live model only. THE BLOCK NEEDS NO
+/// HEADSET: it times you and watches your app context regardless. A board, when present, adds the
+/// brain layer. A block is the honest source of `effortful`; it is never inferred from the signal.
 struct FocusBlockSection: View {
     let model: VertexModel
 
@@ -125,50 +126,70 @@ struct FocusBlockSection: View {
             }
 
             if let p = model.blockProgress {
-                // Running.
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(Self.clock(p.elapsed))
-                        .font(.data(20, .bold))
-                    Text("/ \(Self.clock(p.planned))")
-                        .font(.data(11))
-                        .foregroundStyle(Ink.muted)
-                    Spacer()
-                    Button("End") { model.endBlock() }
-                }
-                Text(model.blockDriftCatches == 1
-                     ? "1 drift caught"
-                     : "\(model.blockDriftCatches) drifts caught")
-                    .font(.label(10))
-                    .foregroundStyle(Ink.muted)
+                running(p)
             } else if let r = model.lastRecap {
-                // Just ended — the recap.
                 RecapView(recap: r)
-                HStack(spacing: 8) {
-                    ForEach(Self.presets, id: \.self) { m in
-                        Button("\(m)m") { model.startBlock(minutes: m) }
-                            .disabled(!model.isConnected)
-                    }
-                    Spacer()
-                }
-                .font(.label(11))
+                presetRow
             } else {
-                // Idle.
-                Text(model.isConnected
-                     ? "Declare a block you mean to concentrate in. A subtle nudge if you drift."
-                     : "Connect a board to run a focus block.")
+                Text("Start a block — NeuroSync keeps you on task, headset or not. Connect a Vertex to add the brain layer.")
                     .font(.label(11))
                     .foregroundStyle(Ink.muted)
                     .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 8) {
-                    ForEach(Self.presets, id: \.self) { m in
-                        Button("\(m)m") { model.startBlock(minutes: m) }
-                            .disabled(!model.isConnected)
-                    }
-                    Spacer()
-                }
-                .font(.label(11))
+                presetRow
             }
         }
+    }
+
+    @ViewBuilder private func running(_ p: (elapsed: TimeInterval, planned: TimeInterval)) -> some View {
+        if let intention = model.blockIntention {
+            Text(intention)
+                .font(.label(12, .medium))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text(Self.clock(p.elapsed))
+                .font(.data(20, .bold))
+            Text("/ \(Self.clock(p.planned))")
+                .font(.data(11))
+                .foregroundStyle(Ink.muted)
+            Spacer()
+            Button("End") { model.endBlock() }
+        }
+        // The live context line, or the drift message when one is up. Measured, never a brain claim.
+        Text(model.driftAlert ? model.driftAlertMessage : liveContextLine)
+            .font(.label(10))
+            .foregroundStyle(model.driftAlert ? Ink.warn : Ink.muted)
+            .fixedSize(horizontal: false, vertical: true)
+        if !model.isConnected {
+            Label("Connect a headset for the brain layer", systemImage: "antenna.radiowaves.left.and.right")
+                .font(.label(10))
+                .foregroundStyle(Ink.dim)
+        }
+    }
+
+    /// e.g. "on task · Xcode — 18m on task, 2 slips". Only app-context facts.
+    private var liveContextLine: String {
+        let where_: String
+        switch model.blockCurrentContext {
+        case .onTask: where_ = "on task"
+        case .away:   where_ = "away"
+        case .neutral: where_ = "—"
+        }
+        let app = model.blockCurrentLabel.map { " · \($0)" } ?? ""
+        let onTask = model.blockOnTaskSeconds / 60
+        let slips = model.blockDriftCatches
+        let tail = slips == 1 ? "1 slip" : "\(slips) slips"
+        return "\(where_)\(app) — \(onTask)m on task, \(tail)"
+    }
+
+    private var presetRow: some View {
+        HStack(spacing: 8) {
+            ForEach(Self.presets, id: \.self) { m in
+                Button("\(m)m") { model.startBlock(minutes: m) }   // no headset required
+            }
+            Spacer()
+        }
+        .font(.label(11))
     }
 
     /// mm:ss.
@@ -178,25 +199,44 @@ struct FocusBlockSection: View {
     }
 }
 
-/// One honest end-of-block summary. Every number is counted from the real DSP epoch stream.
+/// One honest end-of-block summary in TWO vocabularies that never mix. The behavioural half is
+/// measured (time, apps) and always present; the brain half is a focus claim and appears ONLY when a
+/// headset produced epochs. `recap.brain == nil` → there is no focus number to show, by construction.
 struct RecapView: View {
     let recap: BlockRecap
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
+            // Behavioural half — always. Measured facts, not a brain claim.
             HStack(spacing: 16) {
-                stat(String(format: "%.0f", recap.minutesFocused), "MIN FOCUSED")
-                stat("\(recap.driftCatches)", "DRIFTS")
-                stat(String(format: "%.0f", recap.longestFocusedStretchMin), "LONGEST MIN")
+                stat(mins(recap.behavior.onTaskSeconds), "MIN ON TASK")
+                stat("\(recap.behavior.slips)", recap.behavior.slips == 1 ? "SLIP" : "SLIPS")
+                stat(mins(recap.behavior.longestOnTaskStretchSec), "LONGEST MIN")
             }
-            Text(recap.withheldSeconds > 0
-                 ? String(format: "%.0f%% coverage — %d s withheld and not counted as focus.",
-                          recap.coverage * 100, recap.withheldSeconds)
-                 : "Full coverage.")
-                .font(.label(10))
-                .foregroundStyle(Ink.muted)
-                .fixedSize(horizontal: false, vertical: true)
+
+            if let brain = recap.brain {
+                // Brain half — only with a headset. Separate words, separate row.
+                Rectangle().fill(Ink.rule).frame(width: 160, height: 1).padding(.vertical, 1)
+                HStack(spacing: 16) {
+                    stat(mins(brain.focusedSeconds), "MIN FOCUSED")
+                    stat(String(format: "%.0f%%", brain.coverage * 100), "COVERAGE")
+                }
+                if brain.withheldSeconds > 0 {
+                    note(String(format: "%d s withheld — not counted as focus.", brain.withheldSeconds))
+                }
+            } else {
+                note("No headset — this is your behaviour, not a focus score.")
+            }
         }
+    }
+
+    private func mins(_ sec: Int) -> String { String(format: "%.0f", Double(sec) / 60) }
+
+    private func note(_ s: String) -> some View {
+        Text(s)
+            .font(.label(10))
+            .foregroundStyle(Ink.muted)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private func stat(_ value: String, _ label: String) -> some View {

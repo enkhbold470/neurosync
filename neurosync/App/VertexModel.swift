@@ -56,26 +56,40 @@ final class VertexModel {
 
     // MARK: Focus block
     //
-    // A block is N minutes the user declared they mean to concentrate in. It is the honest source of
-    // the `effortful` context `resolveState` requires — the calendar/app watcher is the other one —
-    // and it is NEVER inferred from the brain state. While a block runs, its own per-second loop
-    // drives the drift intervention off the SAME gated, smoothed state stream the recorder writes to
-    // disk, and accumulates the block's epochs so the recap and the saved SessionRecord are built
-    // from one `[Epoch]` and can't disagree. With no board, the loop produces `.withheld` epochs and
-    // nothing fires.
+    // A block is N minutes the user declared they mean to concentrate in. THE BLOCK IS
+    // HARDWARE-OPTIONAL — see Core/FocusBlock.swift. It runs in two tiers each second:
+    //
+    //   Tier 1 (always): the measured frontmost-app context feeds `appDrift` and `behaviorTally`.
+    //     This is behaviour, not a brain number — it never touches Manifesto II.
+    //   Tier 2 (only while a board streams): the gated, smoothed brain state feeds `drift`, and the
+    //     epoch is accumulated so the brain recap and any saved SessionRecord come from one `[Epoch]`.
+    //
+    // Starting a block is the honest, user-supplied source of `effortful = true`; it is NEVER inferred
+    // from the brain state. Losing the headset mid-block does NOT end the block — it just drops Tier 2
+    // and the block carries on headset-free. A single unified debounce spaces the two sources apart so
+    // you never get a double cue.
 
     private(set) var block: ActiveBlock?
     /// The last completed block's summary, for the recap surface. Cleared when a new block starts.
     private(set) var lastRecap: BlockRecap?
     /// True for a few seconds after a drift nudge fires — a glanceable menu-bar state change.
     private(set) var driftAlert = false
+    /// What the last drift nudge said, adapted to its source (app-away vs brain-drift).
+    private(set) var driftAlertMessage = ""
+
+    /// Which tier tripped the nudge — drives the copy (measured "away" vs brain "drifting").
+    private enum DriftSource { case app, brain }
 
     @ObservationIgnored private let blockConfig = FocusBlockConfig()
     @ObservationIgnored private var drift = DriftIntervention()
+    @ObservationIgnored private var appDrift = AppDriftDetector()
+    @ObservationIgnored private var behaviorTally = BehaviorTally()
     @ObservationIgnored private var blockBuilder = EpochBuilder()
     @ObservationIgnored private var blockEpochs: [Epoch] = []
     @ObservationIgnored private var blockTick: Timer?
     @ObservationIgnored private var blockLastSecond = -1
+    /// Unified debounce clock across both drift sources.
+    @ObservationIgnored private var lastBlockNudgeAt = Date.distantPast
     @ObservationIgnored private var driftAlertClear: Timer?
 
     var blockActive: Bool { block != nil }
@@ -98,7 +112,8 @@ final class VertexModel {
             beginRecording()
         case .idle, .failed, .bluetoothOff, .unauthorized:
             if was == .streaming || isRecording { endRecording() }
-            if blockActive { endBlock() }   // the board is gone — seal the block honestly and stop
+            // The board is gone, but a running block is NOT — it falls back to the headset-free tier
+            // and keeps timing + watching app context. Only the user (or Quit) ends a block.
             clearNudge()
         default:
             break
@@ -166,19 +181,34 @@ final class VertexModel {
 
     // MARK: Focus block lifecycle
 
-    /// Start a block of `minutes` minutes. This is the ONLY thing that turns on the drift
-    /// intervention. Starting a block is also what declares `effortful = true` for the block's
-    /// epochs — the honest, user-supplied context `resolveState` needs.
-    func startBlock(minutes: Int? = nil) {
+    /// Start a block of `minutes` minutes, with an optional one-line intention. No headset required —
+    /// this turns on BOTH drift tiers (app-context always; brain only while a board streams). Starting
+    /// a block is what declares `effortful = true` for any brain epochs — user-supplied, never
+    /// inferred from the signal. The block anchors to the effortful app you start in, for the nudge.
+    func startBlock(minutes: Int? = nil, intention: String? = nil) {
         endBlock()   // never stack two blocks
 
         let n = minutes ?? blockConfig.plannedMinutes
         let start = Date()
-        block = ActiveBlock(startedAt: start, plannedMinutes: n)
+        let app = frontmostAppSample()
+        let anchor = app.kind.isEffortful ? app.label : nil
+        let trimmed = intention?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        block = ActiveBlock(
+            startedAt: start,
+            plannedMinutes: n,
+            intention: (trimmed?.isEmpty == false) ? trimmed : nil,
+            anchorLabel: anchor
+        )
         lastRecap = nil
         driftAlert = false
+        driftAlertMessage = ""
+        lastBlockNudgeAt = .distantPast
         drift = DriftIntervention(driftDwellSec: blockConfig.driftDwellSec,
                                   debounceSec: blockConfig.debounceSec)
+        appDrift = AppDriftDetector(awayDwellSec: blockConfig.appDriftDwellSec,
+                                    debounceSec: blockConfig.debounceSec)
+        behaviorTally = BehaviorTally()
         blockBuilder = EpochBuilder()
         blockEpochs = []
         blockLastSecond = -1
@@ -190,30 +220,53 @@ final class VertexModel {
         blockTick = t
     }
 
-    /// One block epoch per wall-clock second, built from the live link's last metrics through the
-    /// shared `EpochBuilder` — the same DSP path the recorder uses. `effortful: true` is the block's
-    /// declaration, not an inference from the signal.
+    /// One tick per wall-clock second. Tier 1 (app context) always runs; Tier 2 (brain epoch + EEG
+    /// drift) runs only while a board streams. Either source may trip a nudge, but a single unified
+    /// debounce spaces them, so a slump — brain, app, or both — is one cue, never a storm.
     private func blockStep() {
-        guard let b = block else { return }
+        guard var b = block else { return }
         let sec = Int(Date().timeIntervalSince(b.startedAt))
         guard sec > blockLastSecond else { return }
+        let dt = Double(sec - blockLastSecond)          // usually 1; robust if a tick is skipped
         blockLastSecond = sec
 
-        let epoch = blockBuilder.close(second: Double(sec), metrics: snap.metrics, effortful: true)
-        blockEpochs.append(epoch)
+        // Tier 1 — measured app context. A fact about which app was frontmost, nothing more.
+        let app = frontmostAppSample()
+        let ctx = workContext(for: app.kind)
+        behaviorTally.add(kind: app.kind, label: app.label, bundleId: app.bundleId, seconds: Int(dt))
+        b.onTaskSeconds = behaviorTally.onTaskSeconds
+        b.awaySeconds = behaviorTally.awaySeconds
+        b.currentLabel = app.label
+        b.currentContext = ctx
+        let appFired = appDriftStep(&appDrift, blockActive: true, context: ctx, dt: dt)
 
-        // Drift detection off the gated, smoothed state, through the shared `driftStep` gate. A
-        // closed gate is `.withheld` here — never `.daydream` — so nothing fires behind a gate; and
-        // `driftStep` refuses to advance the detector at all unless a block is active.
-        if driftStep(&drift, blockActive: true, state: epoch.state, dt: 1.0) {
-            block?.driftCatches += 1
-            fireDriftNudge()
+        // Tier 2 — brain, ONLY while a board is actually streaming. No board → no brain epoch this
+        // second → the brain recap stays nil and no focus number can ever be rendered.
+        var brainFired = false
+        if isConnected {
+            let epoch = blockBuilder.close(second: Double(sec), metrics: snap.metrics, effortful: true)
+            blockEpochs.append(epoch)
+            // A closed gate is `.withheld` here — never `.daydream` — so nothing fires behind a gate.
+            brainFired = driftStep(&drift, blockActive: true, state: epoch.state, dt: dt)
         }
+
+        // Unified debounce across BOTH tiers: at most one nudge per window, never a double cue.
+        if appFired || brainFired {
+            let now = Date()
+            if now.timeIntervalSince(lastBlockNudgeAt) >= blockConfig.debounceSec {
+                lastBlockNudgeAt = now
+                b.driftCatches += 1
+                fireDriftNudge(source: brainFired ? .brain : .app, anchor: b.anchorLabel)
+            }
+        }
+
+        block = b
     }
 
     /// The intervention itself: a subtle sound, a menu-bar state change, and a haptic hook. The pure
-    /// `DriftIntervention` already decided this should fire and counted it; this only performs it.
-    private func fireDriftNudge() {
+    /// detectors already decided this should fire; this only performs it, with copy adapted to which
+    /// tier tripped it.
+    private func fireDriftNudge(source: DriftSource, anchor: String?) {
         // A subtle, non-alarming cue — a soft named system sound, not the alert beep.
         (NSSound(named: "Tink") ?? NSSound(named: "Pop"))?.play()
 
@@ -221,7 +274,15 @@ final class VertexModel {
         // seam a future richer haptic pattern plugs into.
         NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .default)
 
-        // The menu-bar state change: DRIFTING, held briefly so it is glanceable, then cleared.
+        // The menu-bar state change: a glanceable, briefly-held message adapted to the source. The
+        // app-context copy is a neutral check-in, never an accusation — we can't see your tab.
+        switch source {
+        case .brain:
+            driftAlertMessage = "Drifting — want to reset?"
+        case .app:
+            driftAlertMessage = anchor.map { "Away from \($0) — still on it?" }
+                ?? "Away from your work app — still on it?"
+        }
         driftAlert = true
         driftAlertClear?.invalidate()
         let t = Timer.scheduledTimer(withTimeInterval: 8, repeats: false) { _ in
@@ -231,8 +292,8 @@ final class VertexModel {
         driftAlertClear = t
     }
 
-    /// End the block: compute the recap from the block's own epochs, persist it as a SessionRecord,
-    /// and stop the loop. Safe to call when no block is active.
+    /// End the block: build the two-part recap (behavioural always, brain only if a board was on),
+    /// persist any brain epochs as a SessionRecord, and stop the loop. Safe to call with no block.
     func endBlock() {
         blockTick?.invalidate()
         blockTick = nil
@@ -242,17 +303,21 @@ final class VertexModel {
 
         guard let b = block else { return }
 
-        lastRecap = recap(epochs: blockEpochs, driftCatches: b.driftCatches)
+        let behavior = behaviorTally.recap(slips: appDrift.nudges)
+        lastRecap = makeRecap(behavior: behavior, epochs: blockEpochs, driftCatches: b.driftCatches)
         persistBlock(b, epochs: blockEpochs)
 
         block = nil
         drift.reset()
+        appDrift.reset()
+        behaviorTally = BehaviorTally()
         blockEpochs = []
     }
 
-    /// Save the block as a SessionRecord through the existing Store — same schema, same gates. A
-    /// withheld epoch keeps its null score. Requires a granted folder and a real block; otherwise the
-    /// live recap still stands, nothing is lost.
+    /// Save the block's BRAIN epochs as a SessionRecord through the existing Store — same schema, same
+    /// gates. A withheld epoch keeps its null score. A headset-free block has no brain epochs, so it
+    /// is not persisted here (its live recap still stands); persisting behavioural-only blocks into
+    /// the DAY timeline is deliberately deferred — see the spec. Requires a granted folder.
     private func persistBlock(_ b: ActiveBlock, epochs: [Epoch]) {
         guard let store, epochs.count >= 30 else { return }
         let rec = SessionRecord(
@@ -398,6 +463,11 @@ final class VertexModel {
     }
 
     var menuBarState: String {
+        // A running block speaks first — it works with or without a board. `driftAlert` only ever
+        // fires inside a block, so it implies one is active.
+        if blockActive {
+            return driftAlert ? "DRIFTING" : "FOCUS BLOCK"
+        }
         switch state {
         case .idle: return "NO DEVICE"
         case .bluetoothOff: return "BT OFF"
@@ -407,7 +477,6 @@ final class VertexModel {
         case .interrogating: return "READING BOARD"
         case .failed: return "FAULT"
         case .streaming:
-            if driftAlert { return "DRIFTING" }
             return blockingGate == nil ? "LIVE" : "WITHHELD"
         }
     }
@@ -421,4 +490,25 @@ final class VertexModel {
     }
 
     var blockDriftCatches: Int { block?.driftCatches ?? 0 }
+    var blockIntention: String? { block?.intention }
+    var blockAnchorLabel: String? { block?.anchorLabel }
+    var blockOnTaskSeconds: Int { block?.onTaskSeconds ?? 0 }
+    var blockAwaySeconds: Int { block?.awaySeconds ?? 0 }
+    /// The frontmost app right now and whether it counts as on-task — for the live block surface.
+    var blockCurrentLabel: String? { block?.currentLabel }
+    var blockCurrentContext: WorkContext { block?.currentContext ?? .neutral }
+
+    // MARK: Frontmost-app sampling (measured context — bundle id only, no titles/URLs/keystrokes)
+
+    /// The frontmost app this instant, classified. When NeuroSync itself is frontmost (you're looking
+    /// at the block window) the bundle is unrecognised → `.neutral`: it neither nags nor counts as
+    /// work, which is exactly right. Nil frontmost → unknown/neutral.
+    private func frontmostAppSample() -> (kind: ActivityKind, label: String, bundleId: String?) {
+        guard let app = NSWorkspace.shared.frontmostApplication else {
+            return (.unknown, "Unknown", nil)
+        }
+        let bundle = app.bundleIdentifier
+        let kind = bundle.map(activityForBundle) ?? .unknown
+        return (kind, app.localizedName ?? bundle ?? "Unknown", bundle)
+    }
 }
