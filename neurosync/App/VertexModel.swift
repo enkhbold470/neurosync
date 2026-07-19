@@ -13,6 +13,10 @@ final class VertexModel {
     private(set) var state: LinkState = .idle
     private(set) var snap = VertexSnapshot()
 
+    /// Boards seen while scanning, strongest first. The connect screen turns this into a picker so
+    /// you choose YOUR board when several are powered on. Empty unless actively scanning.
+    private(set) var discoveredBoards: [DiscoveredBoard] = []
+
     /// Rolling traces for the session views, ~30 Hz, 30 s deep.
     private(set) var alphaHistory: [Double] = []
     private(set) var focusHistory: [Double] = []
@@ -100,6 +104,9 @@ final class VertexModel {
         }
         link.onSnapshot = { [weak self] s in
             Task { @MainActor in self?.ingest(s) }
+        }
+        link.onDiscover = { [weak self] boards in
+            Task { @MainActor in self?.discoveredBoards = boards }
         }
     }
 
@@ -424,6 +431,8 @@ final class VertexModel {
     // MARK: Intents
 
     func connect() { link.connect() }
+    /// Connect to a board the user picked from the scan list.
+    func connect(to id: UUID) { link.connect(to: id) }
     func disconnect() { link.disconnect() }
     func requestDiag() { link.requestDiag() }
 

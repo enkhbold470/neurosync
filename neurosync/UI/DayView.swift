@@ -28,14 +28,7 @@ struct DayView: View {
                             FindingsPanel(day: day)
                             SegmentsPanel(day: day)
 
-                            HStack(alignment: .top, spacing: 14) {
-                                StrainPanel(day: day)
-                                RecoveryPanel(day: day)
-                            }
-                            HStack(alignment: .top, spacing: 14) {
-                                BergerPanelDay(day: day)
-                                BrainAgePanel()
-                            }
+                            DerivedStrip(day: day)
                         }
                     }
                     .padding(14)
@@ -245,156 +238,94 @@ private struct SegmentRow: View {
     private func pct(_ v: Double) -> String { String(format: "%.0f%%", v * 100) }
 }
 
-// MARK: - Derived panels
+// MARK: - Derived metrics — one compact row
 
-/// A proxy panel: an icon + gauge, one short line, and the full explanation on hover. The long
-/// caveat is not gone — it moved to the tooltip, so the panel reads at a glance and an agent (or a
-/// curious human) can still pull the whole story with `ⓘ`.
-private struct ProxyPanel<Gauge: View>: View {
-    let title: String
-    let icon: String
-    let note: String
-    let detail: String
-    @ViewBuilder var gauge: Gauge
+/// The four derived readouts, condensed from four big panels into one row so they stop dominating the
+/// day. The honest tags stay (PROXY / MEASURED / NOT SHIPPED) and every caveat is one ⓘ hover away.
+struct DerivedStrip: View {
+	let day: Day
 
-    var body: some View {
-        Panel(title: title, symbol: icon, trailing: "PROXY") {
-            HStack(alignment: .center, spacing: 16) {
-                VStack(spacing: 6) {
-                    Image(systemName: icon).font(.system(size: 14)).foregroundStyle(Ink.muted)
-                    gauge
-                }
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(note)
-                        .font(.label(13))
-                        .foregroundStyle(Ink.dim)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Label("what this is", systemImage: "info.circle")
-                        .font(.data(10)).foregroundStyle(Ink.muted)
-                        .help(detail)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-    }
+	var body: some View {
+		Panel(title: "DERIVED", symbol: "function", trailing: "proxies — hover ⓘ for the caveat") {
+			HStack(alignment: .top, spacing: 10) {
+				DerivedTile(
+					title: "COGNITIVE STRAIN", tag: "PROXY",
+					value: day.cognitiveStrainProxy.map { String(format: "%.0f", $0) },
+					unit: "/100",
+					tint: (day.cognitiveStrainProxy ?? 0) >= 66 ? Ink.warn : Ink.amber,
+					note: "Alpha suppression + jaw load, vs your baseline.",
+					detail: "NOT frontal midline theta — FMθ is the validated effort marker, read at Fz, and an around-ear pad cannot reach frontal midline. Anyone selling you FMθ from an earbud is estimating or inventing it."
+				)
+				DerivedTile(
+					title: "MENTAL RECOVERY", tag: "PROXY",
+					value: day.mentalRecoveryProxy.map { String(format: "%.0f", $0) },
+					unit: "%",
+					tint: Ink.state(.calm),
+					note: "Alpha-dominant rest outside work blocks.",
+					detail: "Share of trusted time spent alpha-dominant outside an effortful block — actual rest, not merely the absence of work. Withheld time is excluded from the denominator, so a day the electrode fell off does not read as a day of rest."
+				)
+				DerivedTile(
+					title: "ALPHA (IAF)", tag: "MEASURED",
+					value: day.individualAlphaFreq.map { String(format: "%.1f", $0) },
+					unit: "Hz",
+					tint: Ink.amber,
+					note: "Your Berger peak — a stable per-person constant.",
+					detail: "The Berger peak, median over trusted time. This one is real: IAF is a genuine per-subject constant, stable within a person, and the effect a single around-ear channel demonstrably shows."
+				)
+				DerivedTile(
+					title: "BRAIN AGE", tag: "NOT SHIPPED",
+					value: nil, unit: "",
+					tint: Ink.muted,
+					note: "Deliberately empty — no defensible basis.",
+					detail: "Brain Age has no defensible basis at any channel count, and none on one around-ear electrode. Competitors who ship it map a band-power scalar onto a number that sells. This panel shows the shape of the hole rather than quietly filling it."
+				)
+			}
+		}
+	}
 }
 
-private struct StrainPanel: View {
-    let day: Day
+/// One derived readout: title + tag, a big value (or a dash when there is no defensible number), a
+/// one-line note, and the full caveat on the ⓘ hover.
+struct DerivedTile: View {
+	let title: String
+	let tag: String
+	let value: String?
+	let unit: String
+	let tint: Color
+	let note: String
+	let detail: String
 
-    var body: some View {
-        ProxyPanel(
-            title: "COGNITIVE STRAIN",
-            icon: "gauge.with.dots.needle.67percent",
-            note: "Alpha suppression + jaw load, vs your baseline.",
-            detail: "NOT frontal midline theta — FMθ is the validated effort marker, read at Fz, and an around-ear pad cannot reach frontal midline. Anyone selling you FMθ from an earbud is estimating or inventing it."
-        ) {
-            if let v = day.cognitiveStrainProxy {
-                RingGauge(value: v / 100, center: String(format: "%.0f", v), unit: "/100",
-                          tint: v >= 66 ? Ink.warn : Ink.amber)
-            } else {
-                NotEnough()
-            }
-        }
-    }
-}
-
-private struct RecoveryPanel: View {
-    let day: Day
-
-    var body: some View {
-        ProxyPanel(
-            title: "MENTAL RECOVERY",
-            icon: "leaf.fill",
-            note: "Alpha-dominant rest outside work blocks.",
-            detail: "Share of trusted time spent alpha-dominant outside an effortful block — actual rest, not merely the absence of work. Withheld time is excluded from the denominator, so a day the electrode fell off does not read as a day of rest."
-        ) {
-            if let v = day.mentalRecoveryProxy {
-                RingGauge(value: v / 100, center: String(format: "%.0f", v), unit: "%",
-                          tint: Ink.state(.calm))
-            } else {
-                NotEnough()
-            }
-        }
-    }
-}
-
-private struct BergerPanelDay: View {
-    let day: Day
-
-    var body: some View {
-        Panel(title: "INDIVIDUAL ALPHA FREQUENCY", symbol: "waveform.path.ecg", trailing: "measured") {
-            HStack(alignment: .center, spacing: 16) {
-                VStack(spacing: 6) {
-                    Image(systemName: "waveform.path.ecg").font(.system(size: 14)).foregroundStyle(Ink.muted)
-                    if let f = day.individualAlphaFreq {
-                        VStack(spacing: 4) {
-                            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                                Text(String(format: "%.1f", f)).font(.data(28, .bold)).foregroundStyle(Ink.amber)
-                                Text("Hz").font(.data(11)).foregroundStyle(Ink.muted)
-                            }
-                            GeometryReader { g in
-                                ZStack(alignment: .leading) {
-                                    Capsule().fill(Ink.rule)
-                                    Capsule().fill(Ink.amber).frame(width: 3)
-                                        .offset(x: g.size.width * min(1, max(0, (f - 8) / 5)))
-                                }
-                            }
-                            .frame(width: 92, height: 4)
-                            Text("8–13 Hz").font(.data(9)).foregroundStyle(Ink.muted)
-                        }
-                    } else {
-                        NotEnough()
-                    }
-                }
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Your Berger peak — a real, stable per-person constant.")
-                        .font(.label(13)).foregroundStyle(Ink.dim)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Label("what this is", systemImage: "info.circle")
-                        .font(.data(10)).foregroundStyle(Ink.muted)
-                        .help("The Berger peak, median over trusted time. This one is real: IAF is a genuine per-subject constant, stable within a person, and the effect a single around-ear channel demonstrably shows.")
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-    }
-}
-
-/// Ships as a refusal — see the tooltip for why.
-private struct BrainAgePanel: View {
-    var body: some View {
-        Panel(title: "BRAIN AGE", symbol: "questionmark.circle", trailing: "NOT SHIPPED") {
-            HStack(alignment: .center, spacing: 16) {
-                VStack(spacing: 6) {
-                    Image(systemName: "questionmark.circle").font(.system(size: 14)).foregroundStyle(Ink.muted)
-                    Image(systemName: "nosign").font(.system(size: 30)).foregroundStyle(Ink.muted)
-                }
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Deliberately empty — it has no defensible basis.")
-                        .font(.label(13)).foregroundStyle(Ink.dim)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Label("what this is", systemImage: "info.circle")
-                        .font(.data(10)).foregroundStyle(Ink.muted)
-                        .help("Brain Age has no defensible basis at any channel count, and none on one around-ear electrode. Competitors who ship it map a band-power scalar onto a number that sells. This panel shows the shape of the hole rather than quietly filling it.")
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-    }
-}
-
-private struct NotEnough: View {
-    var body: some View {
-        VStack(spacing: 5) {
-            Image(systemName: "wifi.exclamationmark").font(.system(size: 20)).foregroundStyle(Ink.warn)
-            Text("NOT ENOUGH\nTRUSTED SIGNAL")
-                .font(.data(10, .bold)).tracking(0.8)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(Ink.warn)
-        }
-        .frame(width: 92)
-    }
+	var body: some View {
+		VStack(alignment: .leading, spacing: 8) {
+			HStack(spacing: 6) {
+				Text(title).font(.data(9, .semibold)).tracking(0.8).foregroundStyle(Ink.muted).lineLimit(1)
+				Spacer(minLength: 4)
+				Text(tag).font(.data(8, .semibold)).tracking(0.6).foregroundStyle(Ink.muted.opacity(0.8))
+			}
+			HStack(alignment: .firstTextBaseline, spacing: 2) {
+				Text(value ?? "—")
+					.font(.data(26, .bold))
+					.foregroundStyle(value == nil ? Ink.muted : tint)
+				if value != nil, !unit.isEmpty {
+					Text(unit).font(.data(10)).foregroundStyle(Ink.muted)
+				}
+			}
+			HStack(alignment: .top, spacing: 5) {
+				Text(note)
+					.font(.label(10))
+					.foregroundStyle(Ink.muted)
+					.fixedSize(horizontal: false, vertical: true)
+				Spacer(minLength: 2)
+				Image(systemName: "info.circle")
+					.font(.system(size: 10)).foregroundStyle(Ink.muted)
+					.help(detail)
+			}
+		}
+		.padding(Space.md)
+		.frame(maxWidth: .infinity, minHeight: 112, alignment: .topLeading)
+		.background(Ink.plotBacking, in: RoundedRectangle(cornerRadius: Ink.radius, style: .continuous))
+		.overlay(RoundedRectangle(cornerRadius: Ink.radius, style: .continuous).strokeBorder(Ink.rule, lineWidth: 1))
+	}
 }
 
 // MARK: - Empty states

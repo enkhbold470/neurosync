@@ -24,8 +24,44 @@ struct CloudSyncButton: View {
                     Label("Sign in to sync", systemImage: "icloud.and.arrow.up")
                 }
                 .buttonStyle(InstrumentButton())
-                .sheet(isPresented: $showAuth) { AuthView().frame(minWidth: 360, minHeight: 460) }
+                .sheet(isPresented: $showAuth) { AuthSheet { showAuth = false } }
             }
+        }
+    }
+
+    /// Clerk's `AuthView` is built for iPhone widths; dropped into a 360pt sheet on macOS it overflows
+    /// and clips the email field and buttons. Give it a comfortable fixed frame and our own Close, so
+    /// the whole card is visible and dismissable.
+    private struct AuthSheet: View {
+        let onClose: () -> Void
+
+        var body: some View {
+            VStack(spacing: 0) {
+                HStack {
+                    Text("SIGN IN TO SYNC")
+                        .font(.data(10, .bold)).tracking(1.6)
+                        .foregroundStyle(Ink.muted)
+                    Spacer()
+                    Button(action: onClose) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Ink.dim)
+                            .frame(width: 26, height: 26)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .keyboardShortcut(.cancelAction)
+                }
+                .padding(.horizontal, Space.lg)
+                .padding(.vertical, Space.md)
+
+                Divider().overlay(Ink.rule)
+
+                AuthView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .frame(width: 460, height: 640)
+            .background(Ink.panel)
         }
     }
 

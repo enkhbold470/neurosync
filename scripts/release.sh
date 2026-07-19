@@ -50,11 +50,28 @@ ditto -c -k --keepParent "$APP" "$ZIP"
 xcrun notarytool submit "$ZIP" --keychain-profile "$NOTARY_PROFILE" --wait
 xcrun stapler staple "$APP"
 
-echo "▸ Build DMG"
+echo "▸ Build DMG (styled: fixed window, drag-to-Applications)"
+# create-dmg draws the fixed window — background art, icon size, and the two icon
+# positions the arrow in scripts/dmg-background.png points between. Install it if missing.
+if ! command -v create-dmg >/dev/null 2>&1 && command -v brew >/dev/null 2>&1; then
+  brew install create-dmg || true
+fi
+rm -f "$DMG"
 if command -v create-dmg >/dev/null 2>&1; then
-  create-dmg --volname "NeuroSync" --app-drop-link 480 170 "$DMG" "$APP"
+  create-dmg \
+    --volname "NeuroSync" \
+    --background "scripts/dmg-background.png" \
+    --window-pos 200 120 --window-size 600 400 \
+    --icon-size 112 \
+    --icon "${APP_NAME}.app" 150 205 \
+    --hide-extension "${APP_NAME}.app" \
+    --app-drop-link 450 205 \
+    --no-internet-enable \
+    "$DMG" "$APP"
 else
-  STAGE="$BUILD_DIR/dmg"; mkdir -p "$STAGE"
+  # Last resort (no create-dmg, no Homebrew): a plain, unstyled DMG. Still installs fine.
+  echo "  ⚠ create-dmg unavailable — building a plain DMG without the styled window."
+  STAGE="$BUILD_DIR/dmg"; rm -rf "$STAGE"; mkdir -p "$STAGE"
   cp -R "$APP" "$STAGE/"; ln -s /Applications "$STAGE/Applications"
   hdiutil create -volname "NeuroSync" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
 fi

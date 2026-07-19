@@ -351,13 +351,13 @@ private struct FocusHome: View {
 
             VStack(spacing: Space.sm) {
                 Text("Protect your deep work.")
-                    .font(.label(22, .semibold))
+                    .font(.label(26, .bold))
                     .foregroundStyle(Ink.text)
-                Text("Start a focus block — NeuroSync keeps you on task, no headset needed. A quiet nudge when you drift out of your work, and an honest recap when you're done. Connect a Vertex to add the live brain layer.")
-                    .font(.label(13))
+                Text("A focus timer — no headset needed. Connect a Vertex to add the live brain layer.")
+                    .font(.label(15))
                     .foregroundStyle(Ink.muted)
                     .multilineTextAlignment(.center)
-                    .frame(maxWidth: 500)
+                    .frame(maxWidth: 460)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -406,12 +406,17 @@ private struct FocusHome: View {
                     Label("Open Bluetooth Settings", systemImage: "gearshape")
                 }
                 .buttonStyle(InstrumentButton())
+            case .scanning where !model.discoveredBoards.isEmpty:
+                // Boards found — pick yours instead of the app grabbing whichever answered first.
+                BoardPicker(boards: model.discoveredBoards,
+                            onPick: { model.connect(to: $0) },
+                            onRescan: { model.connect() })
             default:
                 Button { model.connect() } label: {
                     HStack(spacing: 8) {
                         if scanning {
                             ProgressView().controlSize(.small)
-                            Text("Scanning…")
+                            Text(model.state == .scanning ? "Looking for boards…" : "Connecting…")
                         } else {
                             Image(systemName: "antenna.radiowaves.left.and.right")
                             Text("Connect a headset for the brain layer")
@@ -441,6 +446,84 @@ private struct FocusHome: View {
         if let url = URL(string: "x-apple.systempreferences:com.apple.BluetoothSettings") {
             NSWorkspace.shared.open(url)
         }
+    }
+}
+
+// MARK: - Board picker
+
+/// Shown while scanning once one or more boards answer. You tap yours — the app never guesses when
+/// several are powered on. The board you pick is remembered, so next time it connects silently.
+struct BoardPicker: View {
+    let boards: [DiscoveredBoard]
+    let onPick: (UUID) -> Void
+    let onRescan: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.sm) {
+            HStack {
+                Text("SELECT YOUR BOARD")
+                    .font(.data(10, .bold)).tracking(1.6).foregroundStyle(Ink.muted)
+                Spacer()
+                Text("\(boards.count) FOUND")
+                    .font(.data(10, .semibold)).tracking(1.0).foregroundStyle(Ink.muted)
+            }
+
+            ForEach(boards) { b in
+                Button { onPick(b.id) } label: {
+                    HStack(spacing: Space.md) {
+                        SignalBars(rssi: b.rssi)
+                        Text(b.name)
+                            .font(.data(13, .semibold))
+                            .foregroundStyle(Ink.text)
+                            .lineLimit(1)
+                        Spacer(minLength: Space.md)
+                        Text("\(b.rssi) dBm")
+                            .font(.data(10))
+                            .foregroundStyle(Ink.muted)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Ink.amber)
+                    }
+                    .padding(.horizontal, Space.md)
+                    .frame(height: 42)
+                    .frame(maxWidth: .infinity)
+                    .background(Ink.rule.opacity(0.5),
+                                in: RoundedRectangle(cornerRadius: Ink.radius, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: Ink.radius, style: .continuous)
+                        .strokeBorder(Ink.rule, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+
+            Button { onRescan() } label: {
+                Label("Rescan", systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(InstrumentButton())
+        }
+        .frame(width: 380)
+    }
+}
+
+/// Four bars, filled by signal strength (RSSI in dBm; closer to 0 is stronger).
+struct SignalBars: View {
+    let rssi: Int
+    private var level: Int {
+        switch rssi {
+        case (-55)...:        return 4
+        case (-65)..<(-55):   return 3
+        case (-75)..<(-65):   return 2
+        default:              return 1
+        }
+    }
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 2) {
+            ForEach(1...4, id: \.self) { i in
+                RoundedRectangle(cornerRadius: 1, style: .continuous)
+                    .fill(i <= level ? Ink.amber : Ink.rule)
+                    .frame(width: 3, height: CGFloat(4 + i * 3))
+            }
+        }
+        .frame(width: 20, height: 16, alignment: .bottom)
     }
 }
 

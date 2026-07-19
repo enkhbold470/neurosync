@@ -228,42 +228,35 @@ struct SignalPanel: View {
 
 // MARK: - Chrome
 
-/// The spec strip. Every line here is a claim, so every line here is checkable against the
-/// board that is actually plugged in. `fs` is whatever the board reported — never assumed.
+/// A thin live-status strip. The wall of hardware specs moved onto the ⓘ hover — still one hover away
+/// (the "single around-ear channel" disclosure is a claim we keep honest), just off the face of the app.
 struct SpecStrip: View {
     let snap: VertexSnapshot
 
+    private var connected: Bool { snap.info != nil }
+
     var body: some View {
-        HStack(spacing: 14) {
-            item("single around-ear dry channel")
-            dot()
-            item("ADS1220 · 24-bit")
-            dot()
+        HStack(spacing: 8) {
+            Circle()
+                .fill(connected ? Ink.amber : Ink.muted)
+                .frame(width: 6, height: 6)
             if let info = snap.info {
-                item("\(info.fw) · \(info.sps) SPS · batch \(info.batch)")
+                Text("\(info.fw) · \(info.sps) SPS")
+                    .font(.data(9)).foregroundStyle(Ink.dim)
             } else {
-                item("no board")
+                Text("no board").font(.data(9)).foregroundStyle(Ink.muted)
             }
-            dot()
-            item("60 Hz notch")
 
             Spacer()
 
-            // Manifesto VI — the interface layer is a commons. This is rung 2, not dev bloat.
-            Text("bci-mcp — open protocol")
-                .font(.data(9))
+            Image(systemName: "info.circle")
+                .font(.system(size: 10))
                 .foregroundStyle(Ink.muted)
+                .help("Single around-ear dry channel · ADS1220 24-bit · 60 Hz notch · bci-mcp open protocol")
         }
         .padding(.horizontal, Space.xl)
-        .padding(.vertical, 10)
+        .padding(.vertical, 7)
         .glassControl(radius: 0)
         .overlay(Rectangle().frame(height: 1).foregroundStyle(Ink.rule), alignment: .top)
-    }
-
-    private func item(_ s: String) -> some View {
-        Text(s).font(.data(9)).foregroundStyle(Ink.muted)
-    }
-    private func dot() -> some View {
-        Text("·").font(.data(9)).foregroundStyle(Ink.rule)
     }
 }
