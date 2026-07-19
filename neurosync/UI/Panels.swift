@@ -20,11 +20,21 @@ struct GateBanner: View {
         }
     }
 
+    private var symbol: String {
+        switch gate.kind {
+        case .rate: return "speedometer"
+        case .signal: return "sensor.tag.radiowaves.forward.fill"
+        case .calibrating: return "hourglass"
+        case .warmup: return "waveform.badge.magnifyingglass"
+        }
+    }
+
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Rectangle()
-                .fill(tint)
-                .frame(width: 2)
+        HStack(alignment: .top, spacing: Space.md) {
+            Image(systemName: symbol)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 20)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(gate.title)
@@ -40,13 +50,17 @@ struct GateBanner: View {
             Spacer(minLength: 8)
 
             if gate.kind == .rate, let onFixRate {
-                Button("Set 175 SPS", action: onFixRate)
-                    .buttonStyle(InstrumentButton())
+                Button {
+                    onFixRate()
+                } label: {
+                    Label("Set 175 SPS", systemImage: "gauge.with.dots.needle.67percent")
+                }
+                .buttonStyle(InstrumentButton())
             }
         }
-        .padding(12)
-        .background(tint.opacity(0.06))
-        .overlay(Rectangle().strokeBorder(tint.opacity(0.22), lineWidth: 1))
+        .padding(Space.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassCard(radius: Ink.radiusCard, tint: tint)
     }
 }
 
@@ -58,7 +72,7 @@ struct FocusPanel: View {
     let onRecalibrate: () -> Void
 
     var body: some View {
-        Panel(title: "FOCUS", trailing: "β / (α + θ)") {
+        Panel(title: "FOCUS", symbol: "gauge.with.needle", trailing: "β / (α + θ)") {
             VStack(alignment: .leading, spacing: 14) {
                 ZStack {
                     Circle()
@@ -91,9 +105,10 @@ struct FocusPanel: View {
                 .frame(maxWidth: .infinity)
 
                 if withheld {
-                    Text("No score. The gate above must clear first.")
+                    Text("No score yet — waiting for a clean signal. It'll pick up the moment the gate above clears.")
                         .font(.label(11))
                         .foregroundStyle(Ink.muted)
+                        .fixedSize(horizontal: false, vertical: true)
                 } else {
                     HStack(spacing: 6) {
                         Circle()
@@ -111,11 +126,12 @@ struct FocusPanel: View {
 
                 Divider().overlay(Ink.rule)
 
-                // The honesty block. This stays on screen; it is not a tooltip.
+                // What the number means — stays on screen, not a tooltip. Kept plain and useful
+                // rather than sold as a virtue.
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("50 = YOUR OWN baseline, frozen after 20 s.")
-                    Text("Not comparable between people. Valid within this session only.")
-                    Text("β overlaps jaw and neck EMG — clenching raises this exactly like concentrating does.")
+                    Text("50 is your own baseline — where you were in the first 20 seconds.")
+                    Text("It only makes sense within this session, and only for you.")
+                    Text("A clenched jaw reads like focus here, so a tense jaw can nudge it up.")
                 }
                 .font(.label(10))
                 .foregroundStyle(Ink.muted)
@@ -140,7 +156,7 @@ struct BergerPanel: View {
     private var alphaPower: Double { metrics.bands[.alpha] ?? 0 }
 
     var body: some View {
-        Panel(title: "ALPHA — BERGER TEST", trailing: "8–13 Hz") {
+        Panel(title: "ALPHA — BERGER TEST", symbol: "eye", trailing: "8–13 Hz") {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .top, spacing: 20) {
                     Readout(
@@ -158,7 +174,8 @@ struct BergerPanel: View {
 
                 Sparkline(values: alphaHistory, color: Ink.amber)
                     .frame(height: 44)
-                    .background(Color.white.opacity(0.02))
+                    .padding(Space.sm)
+                    .background(Ink.plotBacking, in: RoundedRectangle(cornerRadius: Ink.radius, style: .continuous))
 
                 Text("Close your eyes for 10 s. Alpha should rise and the peak should settle near 10 Hz. If it doesn't, the electrode isn't reading a brain — and nothing else on this screen means anything.")
                     .font(.label(10))
@@ -176,7 +193,7 @@ struct SignalPanel: View {
     let onDiag: () -> Void
 
     var body: some View {
-        Panel(title: "SIGNAL", trailing: snap.metrics.signalOk ? "CONTACT" : "NO CONTACT") {
+        Panel(title: "SIGNAL", symbol: "dot.radiowaves.up.forward", trailing: snap.metrics.signalOk ? "CONTACT" : "NO CONTACT") {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
                     Readout(label: "RMS", value: String(format: "%.2f", snap.metrics.rmsUv), unit: "µV")
@@ -211,24 +228,6 @@ struct SignalPanel: View {
 
 // MARK: - Chrome
 
-struct InstrumentButton: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.data(11, .semibold))
-            .tracking(0.8)
-            .foregroundStyle(configuration.isPressed ? Ink.bg : Ink.amber)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(configuration.isPressed ? Ink.amber : Color.clear,
-                        in: RoundedRectangle(cornerRadius: Ink.radius, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Ink.radius, style: .continuous)
-                    .strokeBorder(Ink.amber.opacity(0.5), lineWidth: 1)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: Ink.radius, style: .continuous))
-    }
-}
-
 /// The spec strip. Every line here is a claim, so every line here is checkable against the
 /// board that is actually plugged in. `fs` is whatever the board reported — never assumed.
 struct SpecStrip: View {
@@ -255,9 +254,9 @@ struct SpecStrip: View {
                 .font(.data(9))
                 .foregroundStyle(Ink.muted)
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, Space.xl)
         .padding(.vertical, 10)
-        .background(Ink.bg)
+        .glassControl(radius: 0)
         .overlay(Rectangle().frame(height: 1).foregroundStyle(Ink.rule), alignment: .top)
     }
 

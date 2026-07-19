@@ -20,7 +20,7 @@ struct DayView: View {
                         DayHeader(model: model, day: day)
 
                         VStack(alignment: .leading, spacing: 14) {
-                            Panel(title: "TIMELINE", trailing: coverageLabel(day)) {
+                            Panel(title: "TIMELINE", symbol: "calendar.day.timeline.left", trailing: coverageLabel(day)) {
                                 DayRibbon(day: day)
                                 StateLegend()
                             }
@@ -67,7 +67,7 @@ private struct DayHeader: View {
                 } label: {
                     Text(dayLabel(d))
                         .font(.data(12, d.key == day.key ? .bold : .regular))
-                        .foregroundStyle(d.key == day.key ? Ink.bg : Ink.dim)
+                        .foregroundStyle(d.key == day.key ? Ink.onAccent : Ink.dim)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
                         .background(d.key == day.key ? Ink.amber : Color.clear,
@@ -126,7 +126,7 @@ private struct FindingsPanel: View {
     let day: Day
 
     var body: some View {
-        Panel(title: "FINDINGS", trailing: "\(day.findings.count)") {
+        Panel(title: "FINDINGS", symbol: "lightbulb", trailing: "\(day.findings.count)") {
             VStack(alignment: .leading, spacing: 13) {
                 ForEach(day.findings) { f in
                     HStack(alignment: .top, spacing: 11) {
@@ -169,7 +169,7 @@ private struct SegmentsPanel: View {
     let day: Day
 
     var body: some View {
-        Panel(title: "BLOCKS", trailing: "median focus · baseline is 50") {
+        Panel(title: "BLOCKS", symbol: "rectangle.stack", trailing: "median focus · baseline is 50") {
             VStack(spacing: 0) {
                 ForEach(day.segments) { seg in
                     SegmentRow(seg: seg)
@@ -258,7 +258,7 @@ private struct ProxyPanel<Gauge: View>: View {
     @ViewBuilder var gauge: Gauge
 
     var body: some View {
-        Panel(title: title, trailing: "PROXY") {
+        Panel(title: title, symbol: icon, trailing: "PROXY") {
             HStack(alignment: .center, spacing: 16) {
                 VStack(spacing: 6) {
                     Image(systemName: icon).font(.system(size: 14)).foregroundStyle(Ink.muted)
@@ -323,7 +323,7 @@ private struct BergerPanelDay: View {
     let day: Day
 
     var body: some View {
-        Panel(title: "INDIVIDUAL ALPHA FREQUENCY", trailing: "measured") {
+        Panel(title: "INDIVIDUAL ALPHA FREQUENCY", symbol: "waveform.path.ecg", trailing: "measured") {
             HStack(alignment: .center, spacing: 16) {
                 VStack(spacing: 6) {
                     Image(systemName: "waveform.path.ecg").font(.system(size: 14)).foregroundStyle(Ink.muted)
@@ -364,7 +364,7 @@ private struct BergerPanelDay: View {
 /// Ships as a refusal — see the tooltip for why.
 private struct BrainAgePanel: View {
     var body: some View {
-        Panel(title: "BRAIN AGE", trailing: "NOT SHIPPED") {
+        Panel(title: "BRAIN AGE", symbol: "questionmark.circle", trailing: "NOT SHIPPED") {
             HStack(alignment: .center, spacing: 16) {
                 VStack(spacing: 6) {
                     Image(systemName: "questionmark.circle").font(.system(size: 14)).foregroundStyle(Ink.muted)

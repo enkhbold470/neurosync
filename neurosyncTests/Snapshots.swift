@@ -85,10 +85,61 @@ private func fixture() -> (FocusMetrics, [Double]) {
 @MainActor
 @Test func snapshotNoDevice() throws {
     // 100% real: this is exactly what the app shows with no board. No fixture involved.
-    let path = try render(ContentView(model: VertexModel(), days: DayModel()),
+    let path = try render(ContentView(model: VertexModel(), days: DayModel(), cloud: ConvexCloud()),
                           size: CGSize(width: 1180, height: 760), to: "01-no-device.png")
     print("SNAPSHOT \(path)")
     #expect(FileManager.default.fileExists(atPath: path))
+}
+
+/// The focus-block home in both appearances — proves the adaptive tokens flip and stay legible, and
+/// that the disconnected window leads with "start a block" (no headset required), not a dead end.
+@MainActor
+@Test func snapshotFocusHomeAppearances() throws {
+    for scheme in [ColorScheme.light, .dark] {
+        let name = scheme == .light ? "01a-home-light.png" : "01b-home-dark.png"
+        let v = ContentView(model: VertexModel(), days: DayModel(), cloud: ConvexCloud())
+            .environment(\.colorScheme, scheme)
+        let path = try render(v, size: CGSize(width: 1180, height: 760), to: name)
+        print("SNAPSHOT \(path)")
+        #expect(FileManager.default.fileExists(atPath: path))
+    }
+}
+
+/// The end-of-block recap, in BOTH vocabularies side by side — the honesty boundary made visible. The
+/// headset-free recap (left) shows measured behaviour and explicitly no focus score; the headset
+/// recap (right) adds the brain half. A screenshot of the left can never be mistaken for a brain
+/// measurement, which is the whole point.
+@MainActor
+@Test func snapshotBlockRecap() throws {
+    let behavior = BehaviorRecap(
+        totalSeconds: 25 * 60, onTaskSeconds: 22 * 60, awaySeconds: 3 * 60,
+        longestOnTaskStretchSec: 14 * 60, slips: 3,
+        topApps: [AppTally(bundleKey: "com.apple.dt.Xcode", kind: .coding, label: "Xcode", seconds: 22 * 60, context: .onTask)]
+    )
+    let headsetFree = BlockRecap(behavior: behavior, brain: nil, driftCatches: 3)
+    let withHeadset = BlockRecap(
+        behavior: behavior,
+        brain: BrainRecap(focusedSeconds: 18 * 60, withheldSeconds: 90, brainSeconds: 22 * 60, longestFocusedStretchSec: 9 * 60),
+        driftCatches: 3
+    )
+
+    let view = HStack(alignment: .top, spacing: 24) {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("HEADSET-FREE").font(.data(9, .bold)).tracking(1.4).foregroundStyle(Ink.muted)
+            RecapView(recap: headsetFree)
+        }
+        VStack(alignment: .leading, spacing: 6) {
+            Text("WITH HEADSET").font(.data(9, .bold)).tracking(1.4).foregroundStyle(Ink.muted)
+            RecapView(recap: withHeadset)
+        }
+    }
+    .padding(20)
+    .background(Ink.bg)
+
+    let path = try render(view, size: CGSize(width: 620, height: 220), to: "07-block-recap.png")
+    print("SNAPSHOT \(path)")
+    #expect(headsetFree.brain == nil)
+    #expect(withHeadset.brain != nil)
 }
 
 @MainActor

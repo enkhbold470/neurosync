@@ -1,0 +1,7 @@
+{
+  "_comment": "Public app config, bundled via the asset catalog (Assets.car). All values are PUBLIC-safe: a publishable Clerk key, a public Convex deployment URL, and a PostHog project API key (phc_, client-side by design). No secret ships in the app. The Convex deploy key and Clerk SECRET key live only in the gitignored .env. Convex is NeuroSync's OWN deployment (project neurosync, team inky-team), NOT the landing page's avid-guineapig-274. Empty a value to disable that feature.",
+  "CONVEX_URL": "https://gregarious-leopard-890.convex.cloud",
+  "CLERK_PUBLISHABLE_KEY": "pk_test_YWRqdXN0ZWQtb3J5eC04LmNsZXJrLmFjY291bnRzLmRldiQ",
+  "POSTHOG_KEY": "phc_mrrk2K8ZnmoWAeruQJBTzmhPUF8NPA3FsWnArqTxNNry",
+  "POSTHOG_HOST": "https://us.i.posthog.com"
+}

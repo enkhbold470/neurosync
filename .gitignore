@@ -49,3 +49,17 @@ neurosync-shots/
 
 # Internal launch copy — not part of the open-source project
 LAUNCH.md
+
+# Secrets — Convex deploy key, Clerk keys, deployment URL. NEVER commit.
+.env
+.env.*
+!.env.example
+
+# Node / Convex CLI — never commit installed deps or CLI scaffolding.
+node_modules/
+.agents/
+AGENTS.md
+skills-lock.json
+.claude/skills/convex/
+.claude/skills/convex-*/
+convex/_generated/ai/

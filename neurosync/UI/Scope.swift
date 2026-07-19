@@ -108,7 +108,7 @@ struct SpectrumView: View {
 
             // Beta band 13–30 Hz — the focus numerator
             let bRect = CGRect(x: x(13), y: 0, width: x(30) - x(13), height: plotH)
-            ctx.fill(Path(bRect), with: .color(Color.white.opacity(0.03)))
+            ctx.fill(Path(bRect), with: .color(Ink.dim.opacity(0.10)))
 
             var path = Path()
             for (i, bin) in bins.enumerated() {
