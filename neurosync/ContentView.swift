@@ -31,6 +31,8 @@ struct ContentView: View {
     var cloud: ConvexCloud
 
     @State private var surface: Surface = .live
+    /// Held so the sign-in observer below can flush the backlog when auth flips on.
+    @State private var syncController: CloudSyncController?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -62,20 +64,27 @@ struct ContentView: View {
         }
         .background(Ink.bg)
         .frame(minWidth: 1120, minHeight: 760)
-        .task {
-            // The live model records through the SAME store the Day view reads. It is handed over
-            // here rather than constructed inside VertexModel, so the link has no way to reach the
-            // filesystem on its own.
+        // ONE task, keyed on auth state, so there is no race between wiring and the sign-in flush.
+        // It runs on first appear (signedIn=false → syncPending is a guarded no-op) and again the
+        // moment `signedIn` flips true — which is what mirrors the local backlog to the cloud. Without
+        // keying on auth, a session recorded before sign-in would never upload until the NEXT one
+        // sealed. Wiring (store handover + onSessionWritten) happens once, on the first run.
+        .task(id: cloud.signedIn) {
+            // The live model records through the SAME store the Day view reads. Handed over here so
+            // the link has no way to reach the filesystem on its own.
             model.store = days.store
 
-            // Opt-in cloud mirror. Off (a true no-op) unless a CONVEX_URL is configured and a user is
-            // signed in — the instrument stays local-first. Uploads local sessions, never synthetic.
-            let sync = CloudSyncController(store: days.store, uploader: cloud.uploader)
-            model.onSessionWritten = {
-                days.load()
-                Task { await sync.syncPending() }
+            if syncController == nil {
+                let sync = CloudSyncController(store: days.store, uploader: cloud.uploader)
+                syncController = sync
+                model.onSessionWritten = {
+                    days.load()
+                    Task { await sync.syncPending() }
+                }
             }
-            await sync.syncPending()
+            // Opt-in cloud mirror. A true no-op unless a CONVEX_URL is configured AND a user is signed
+            // in — the instrument stays local-first. Uploads local sessions, never synthetic ones.
+            await syncController?.syncPending()
         }
     }
 }
