@@ -64,7 +64,9 @@ skills-lock.json
 .claude/skills/convex-*/
 convex/_generated/ai/
 
-# Signing identities — NEVER commit (private keys)
+# Signing identities — NEVER commit (private keys). PUBLIC repo: a leaked key is a real incident.
 *.p12
 *.cer
 *.mobileprovision
+*.p8
+AuthKey_*.p8

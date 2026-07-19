@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# One run per ref; a new push cancels the previous in-flight run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fast, no-toolchain guard. On a PUBLIC repo a leaked signing key is a real incident,
+  # so fail the build if any private-key material or provider secret is ever committed.
+  secret-guard:
+    name: Secret guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Refuse committed signing keys / secrets
+        run: |
+          set -euo pipefail
+          if git ls-files | grep -E '\.(p8|p12|cer|mobileprovision)$'; then
+            echo "::error::A signing key/cert is committed — remove it and rotate."
+            exit 1
+          fi
+          # Exclude this workflow from the scan so its own patterns don't self-match.
+          hits=$(git grep -nE 'BEGIN [A-Z ]*PRIVATE KEY|sk_(live|test)_[A-Za-z0-9]{8}|CONVEX_DEPLOY_KEY=[A-Za-z0-9]' \
+            -- ':!.github/**' || true)
+          if [ -n "$hits" ]; then
+            echo "::error::Secret-like content is committed:"
+            echo "$hits"
+            exit 1
+          fi
+          echo "No committed private keys or provider secrets detected."
+
+  build-test:
+    name: Build & unit test (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Print exactly what this runner provides, ALWAYS — so a toolchain gap is legible
+      # in the log instead of surfacing as a cryptic build error.
+      - name: Runner toolchain
+        run: |
+          sw_vers
+          echo "--- Available Xcodes ---"
+          ls -d /Applications/Xcode_*.app 2>/dev/null || true
+          echo "--- Selecting newest installed Xcode ---"
+          latest=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1 || true)
+          if [ -n "$latest" ]; then sudo xcode-select -s "$latest"; fi
+          xcodebuild -version
+          xcrun --sdk macosx --show-sdk-version
+
+      # No signing certs exist on a hosted runner, and the project uses Automatic signing
+      # for team 24QC7XFXVJ. Override to ad-hoc/manual so build+test never need real certs.
+      - name: Build
+        run: |
+          xcodebuild build \
+            -scheme neurosync \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual \
+            CODE_SIGNING_REQUIRED=NO DEVELOPMENT_TEAM="" \
+            -quiet
+
+      - name: Unit tests
+        run: |
+          xcodebuild test \
+            -scheme neurosync \
+            -destination 'platform=macOS' \
+            -only-testing:neurosyncTests \
+            CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual \
+            CODE_SIGNING_REQUIRED=NO DEVELOPMENT_TEAM="" \
+            -quiet
