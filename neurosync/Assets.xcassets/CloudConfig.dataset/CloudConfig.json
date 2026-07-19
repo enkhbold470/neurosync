@@ -1,0 +1,5 @@
+{
+  "_comment": "Public cloud config, bundled via the asset catalog (Assets.car). Both values are PUBLIC-safe: a publishable Clerk key and a public Convex deployment URL — no secret ships in the app. The Convex deploy key and Clerk SECRET key live only in the gitignored .env. This is NeuroSync's OWN deployment (project neurosync, team inky-team), NOT the landing page's avid-guineapig-274. Empty a value to disable that half of cloud sync.",
+  "CONVEX_URL": "https://gregarious-leopard-890.convex.cloud",
+  "CLERK_PUBLISHABLE_KEY": "pk_test_YWRqdXN0ZWQtb3J5eC04LmNsZXJrLmFjY291bnRzLmRldiQ"
+}
