@@ -63,3 +63,8 @@ skills-lock.json
 .claude/skills/convex/
 .claude/skills/convex-*/
 convex/_generated/ai/
+
+# Signing identities — NEVER commit (private keys)
+*.p12
+*.cer
+*.mobileprovision
