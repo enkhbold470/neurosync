@@ -39,40 +39,35 @@ waitlist. Do **not** deploy there as-is.
   SOLE deployer of `avid-guineapig-274` forever (the landing page must never `convex deploy` again).
   Workable but fragile — every landing-page backend change must be re-vendored here before deploying.
 
-## The 3 values you must provide (from Clerk)
-Deploy is currently blocked (safely) until Clerk is set — `codegen`/`deploy` refuse because
-`auth.config.ts` needs `CLERK_FRONTEND_API_URL`. Your Clerk app id is `app_3Gg4jC7kkLaOz8Z0mTflMy5D01e`.
-1. In Clerk: enable **Native API**, add a **JWT template named `convex`**, add this macOS app's
-   **bundle id** (`com.inkyg.neurosync`) under Native Applications, and add the associated-domain
-   `webcredentials:<your-frontend-api>`.
-2. Grab **`CLERK_PUBLISHABLE_KEY`** and the **Frontend API URL** from the Clerk dashboard.
+## ✅ What is already DONE (path A — separate deployment)
+- **Separate NeuroSync deployment** created: project `neurosync` in team `inky-team`, dev deployment
+  **`gregarious-leopard-890`** (`https://gregarious-leopard-890.convex.cloud`). Fully isolated from
+  the landing page's `avid-guineapig-274`.
+- **Schema + functions deployed** there (users/devices/sessions/epochChunks/focusBlocks/markers/
+  dayRollups + the vendored waitlist), with all indexes.
+- **Clerk configured:** `CLERK_FRONTEND_API_URL=https://adjusted-oryx-8.clerk.accounts.dev` set on the
+  deployment; **JWT template `convex`** created (`claims: {"aud":"convex"}`, 60 s lifetime).
+- **App wired:** `CONVEX_URL` + `CLERK_PUBLISHABLE_KEY` ship in the asset-catalog `CloudConfig` data
+  set (public-safe). Cloud is forced OFF under the test host (`CloudConfig.isRunningTests`).
+- **Landing page restored + verified:** `avid-guineapig-274` was redeployed from `neurofocus-finc`
+  (blog `posts.js`/`files.js` back), waitlist = 26, blog query works.
 
-## Turn it on
-```bash
-cd /Users/inky/Desktop/neurofocus-brain/neurosync
-# 1. Clerk frontend API URL → the Convex deployment's env (needed before deploy)
-npx convex env set CLERK_FRONTEND_API_URL "https://<your-frontend-api>.clerk.accounts.dev"
-# 2. verify the waitlist is untouched BEFORE
-npx convex run waitlist:count '{}'          # -> 24
-# 3. deploy — ONLY to a SEPARATE NeuroSync deployment (path A), OR after vendoring the FULL
-#    landing-page backend (path B). NEVER deploy the current convex/ to avid-guineapig-274:
-#    it would delete the blog (posts.ts/files.ts) and drop the posts table.
-npx convex deploy
-# 4. verify the waitlist AND the blog are untouched AFTER
-npx convex run waitlist:count '{}'          # -> 24
-npx convex run posts:listPublished '{}'     # -> the blog posts, unchanged
-```
+## ⏳ What REMAINS (needs your Clerk dashboard / a real sign-in test)
+The plumbing is done, but auth can only be *verified* by a real interactive sign-in:
+1. In the **Clerk dashboard** (instance `adjusted-oryx-8`), confirm **email sign-up/sign-in is
+   enabled**, and — if ClerkKit's native flow requires it — register this app's bundle id
+   `com.inkyg.neurosync` under **Native Applications**. (The `convex` JWT template already exists.)
+2. **Run the app** (from Xcode) and sign in via the glass "Sign in to sync" button. Then confirm a
+   real session appears in the dashboard: `https://dashboard.convex.dev/d/gregarious-leopard-890`.
+3. To promote from the **dev** deployment to a **prod** one later: `npx convex deploy` (creates the
+   project's prod deployment), set `CLERK_FRONTEND_API_URL` on prod too, and swap the `CONVEX_URL` in
+   `Assets.xcassets/CloudConfig.dataset/CloudConfig.json` to the prod URL.
 
-## Point the app at the deployment
-The app reads `CONVEX_URL` + `CLERK_PUBLISHABLE_KEY` from its Info.plist (or the scheme's environment
-for dev). Add both to the `neurosync` target (Xcode ▸ target ▸ Info, or `INFOPLIST_KEY_CONVEX_URL` /
-`INFOPLIST_KEY_CLERK_PUBLISHABLE_KEY` build settings — both are public-safe to commit):
-```
-CONVEX_URL = https://avid-guineapig-274.convex.cloud
-CLERK_PUBLISHABLE_KEY = pk_...
-```
-Once both are set, the header shows **“Sign in to sync”**; after sign-in, real sessions mirror to
-Convex automatically (never synthetic ones, `null` withheld scores preserved).
+## How the app reads its config
+`CloudConfig` reads `CONVEX_URL` + `CLERK_PUBLISHABLE_KEY` from, in order: the bundled asset-catalog
+`CloudConfig` data set (what ships today) → Info.plist → environment. Both values are public-safe.
+When both are present (and not under tests) the header shows **"Sign in to sync"**; after sign-in,
+real sessions mirror to Convex automatically (never synthetic ones; `null` withheld scores preserved).
 
 ## Rotate the shared secrets
 The deploy key + team token pasted in chat should be rotated in the Convex dashboard; update `.env`.
