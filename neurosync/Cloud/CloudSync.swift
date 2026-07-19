@@ -88,6 +88,9 @@ final class CloudSyncController {
                 cursor.mark(r)
             } catch {
                 NSLog("cloud sync: upload deferred for \(r.id) — \(error.localizedDescription)")
+                // Report the FAILURE for production visibility — a technical error, no session data,
+                // no brain data, no id. This is the blind spot that made sync bugs hard to diagnose.
+                Telemetry.error(error, "cloud-sync-upload")
                 break   // stop on first failure; the local file is durable, retry next launch
             }
         }

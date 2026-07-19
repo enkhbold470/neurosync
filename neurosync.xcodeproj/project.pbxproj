@@ -11,6 +11,7 @@
 		8DE3481C300BB875009FBB30 /* ClerkConvex in Frameworks */ = {isa = PBXBuildFile; productRef = BB0000000000000000000002 /* ClerkConvex */; };
 		8DE3481D300BB875009FBB30 /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = BB0000000000000000000003 /* ClerkKit */; };
 		8DE3481E300BB875009FBB30 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = BB0000000000000000000004 /* ClerkKitUI */; };
+		8DE3481F300BB875009FBB30 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = BB0000000000000000000005 /* PostHog */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -63,6 +64,7 @@
 				8DE3481D300BB875009FBB30 /* ClerkKit in Frameworks */,
 				8DE3481C300BB875009FBB30 /* ClerkConvex in Frameworks */,
 				8DE3481B300BB875009FBB30 /* ConvexMobile in Frameworks */,
+				8DE3481F300BB875009FBB30 /* PostHog in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -127,6 +129,7 @@
 				BB0000000000000000000002 /* ClerkConvex */,
 				BB0000000000000000000003 /* ClerkKit */,
 				BB0000000000000000000004 /* ClerkKitUI */,
+				BB0000000000000000000005 /* PostHog */,
 			);
 			productName = neurosync;
 			productReference = 8D1917803003A88300BBECC3 /* neurosync.app */;
@@ -214,6 +217,7 @@
 				AA0000000000000000000001 /* XCRemoteSwiftPackageReference "convex-swift" */,
 				AA0000000000000000000002 /* XCRemoteSwiftPackageReference "clerk-convex-swift" */,
 				AA0000000000000000000003 /* XCRemoteSwiftPackageReference "clerk-ios" */,
+				AA0000000000000000000004 /* XCRemoteSwiftPackageReference "posthog-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8D1917813003A88300BBECC3 /* Products */;
@@ -293,6 +297,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -347,7 +352,6 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				ARCHS = arm64;
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -358,6 +362,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -405,7 +410,6 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.1;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
-				ARCHS = arm64;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
@@ -627,6 +631,14 @@
 				minimumVersion = 1.3.2;
 			};
 		};
+		AA0000000000000000000004 /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/PostHog/posthog-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.66.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -649,6 +661,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = AA0000000000000000000003 /* XCRemoteSwiftPackageReference "clerk-ios" */;
 			productName = ClerkKitUI;
+		};
+		BB0000000000000000000005 /* PostHog */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000004 /* XCRemoteSwiftPackageReference "posthog-ios" */;
+			productName = PostHog;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -45,6 +45,12 @@ enum CloudConfig {
     /// `nil`/empty → Clerk is not configured and cloud sign-in is unavailable.
     static var clerkPublishableKey: String? { value("CLERK_PUBLISHABLE_KEY") }
 
+    /// PostHog project API key (public `phc_`, client-side by design). `nil` → error tracking is off.
+    static var posthogKey: String? { value("POSTHOG_KEY") }
+
+    /// PostHog ingestion host. Defaults to US cloud.
+    static var posthogHost: String { value("POSTHOG_HOST") ?? "https://us.i.posthog.com" }
+
     /// True when running inside the XCTest/Swift Testing host. The unit-test host launches the real
     /// app binary; if the app's Info.plist carries a CONVEX_URL + Clerk key, `canOfferSync` would be
     /// true and the app would touch `Clerk.shared` at launch, which traps under the test host. So the

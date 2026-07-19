@@ -19,6 +19,7 @@ enum Entry {
         if SyntheticCLI.requested {
             SyntheticCLI.run()   // generates, prints, and exit()s — never returns
         }
+        Telemetry.start()        // error + crash reporting (no brain data, no PII). No-op if unconfigured.
         NeuroSyncApp.main()
     }
 }
