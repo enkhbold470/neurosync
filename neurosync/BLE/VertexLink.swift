@@ -38,14 +38,34 @@ struct VertexSnapshot: Sendable {
     var framesReceived: Int = 0
 }
 
+/// One board seen while scanning. The UI lists these so you pick YOUR board instead of the app
+/// grabbing whichever advertised first — the bug when several boards are powered on nearby.
+struct DiscoveredBoard: Identifiable, Sendable, Equatable {
+    let id: UUID       // CBPeripheral.identifier — stable per Mac, used to reconnect.
+    let name: String
+    let rssi: Int      // dBm; higher (closer to 0) is stronger. Sorted strongest-first.
+}
+
 // MARK: - Link
 
 nonisolated final class VertexLink: NSObject {
 
     var onState: (@Sendable (LinkState) -> Void)?
     var onSnapshot: (@Sendable (VertexSnapshot) -> Void)?
+    /// The live list of boards seen while scanning, strongest signal first. The UI turns this into a picker.
+    var onDiscover: (@Sendable ([DiscoveredBoard]) -> Void)?
 
     private let queue = DispatchQueue(label: "dev.neurofocus.vertex.ble")
+    /// Boards seen this scan, keyed by identifier. Retaining the CBPeripheral is required — CoreBluetooth
+    /// deallocates any peripheral you don't hold, and you cannot connect to one you dropped.
+    private var discovered: [UUID: (peripheral: CBPeripheral, board: DiscoveredBoard)] = [:]
+
+    /// The last board the user connected to. When it reappears we reconnect silently — the picker is for
+    /// ambiguity, not a tax on every launch. Cleared if that remembered board then fails to connect.
+    private var rememberedID: UUID? {
+        get { UserDefaults.standard.string(forKey: "vertex.lastBoardID").flatMap(UUID.init(uuidString:)) }
+        set { UserDefaults.standard.set(newValue?.uuidString, forKey: "vertex.lastBoardID") }
+    }
     /// Created on the first connect(), not at launch: powering up the radio is what triggers
     /// the macOS Bluetooth permission prompt, and an app that has not been asked to connect to
     /// anything has no business asking for the radio.
@@ -87,10 +107,37 @@ nonisolated final class VertexLink: NSObject {
         }
     }
 
+    /// Connect to a specific board the user chose from the scan list.
+    func connect(to id: UUID) {
+        queue.async { [self] in
+            guard let c = central, let entry = discovered[id] else { return }
+            connectResolved(c, entry.peripheral)
+        }
+    }
+
+    /// Commit to one peripheral: stop scanning, remember it for next time, and open the link.
+    private func connectResolved(_ c: CBCentralManager, _ p: CBPeripheral) {
+        c.stopScan()
+        peripheral = p
+        p.delegate = self
+        rememberedID = p.identifier
+        discovered.removeAll()
+        emitDiscovered()
+        state = .connecting
+        c.connect(p, options: nil)
+    }
+
+    private func emitDiscovered() {
+        let list = discovered.values.map(\.board).sorted { $0.rssi > $1.rssi }
+        onDiscover?(list)
+    }
+
     private func startScanIfReady(_ c: CBCentralManager) {
         guard wantsScan, peripheral == nil else { return }
         switch c.state {
         case .poweredOn:
+            discovered.removeAll()
+            emitDiscovered()
             state = .scanning
             c.scanForPeripherals(
                 withServices: [CBUUID(string: Vertex.serviceUUID)],
@@ -161,6 +208,8 @@ nonisolated final class VertexLink: NSObject {
         engine = nil
         lastSeq = nil
         infoRetries = 0
+        discovered.removeAll()
+        emitDiscovered()
         snapshot = VertexSnapshot()
         emit()
     }
@@ -264,11 +313,20 @@ extension VertexLink: CBCentralManagerDelegate {
                         didDiscover p: CBPeripheral,
                         advertisementData: [String: Any],
                         rssi RSSI: NSNumber) {
-        c.stopScan()
-        peripheral = p
-        p.delegate = self
-        state = .connecting
-        c.connect(p, options: nil)
+        // Do NOT auto-connect to the first board seen — with several boards powered on that is a
+        // coin toss, and picking the wrong one is exactly the "no board / never answered INFO" bug.
+        let name = p.name
+            ?? (advertisementData[CBAdvertisementDataLocalNameKey] as? String)
+            ?? "Vertex board"
+        discovered[p.identifier] = (p, DiscoveredBoard(id: p.identifier, name: name, rssi: RSSI.intValue))
+
+        // Fast path: silently reconnect to the board you used last, so returning users never see a
+        // picker. Everyone else picks from the list the UI builds off `onDiscover`.
+        if rememberedID == p.identifier {
+            connectResolved(c, p)
+        } else {
+            emitDiscovered()
+        }
     }
 
     func centralManager(_ c: CBCentralManager, didConnect p: CBPeripheral) {
@@ -279,6 +337,9 @@ extension VertexLink: CBCentralManagerDelegate {
     func centralManager(_ c: CBCentralManager,
                         didFailToConnect p: CBPeripheral,
                         error: Error?) {
+        // If the board we auto-reconnected to is the one that failed, stop trusting it — the next
+        // scan shows the picker instead of silently retrying a dead board forever.
+        if rememberedID == p.identifier { rememberedID = nil }
         teardown()
         state = .failed(error?.localizedDescription ?? "Could not connect to the board.")
     }

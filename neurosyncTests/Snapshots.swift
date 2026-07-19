@@ -338,3 +338,35 @@ private func snapshotFixtureDay() -> Day {
         synthetic: true, syntheticNote: syntheticNote)
     return rollUp(sessions: [session], markers: session.markers, date: start)
 }
+
+/// The condensed DERIVED row that replaced four stacked proxy panels — proves it composes and keeps
+/// the honest PROXY / MEASURED / NOT SHIPPED tags in one glanceable strip.
+@MainActor
+@Test func snapshotDerivedStrip() throws {
+    let day = snapshotFixtureDay()
+    let view = DerivedStrip(day: day)
+        .padding(16)
+        .frame(width: 1120, height: 220, alignment: .top)
+        .background(Ink.bg)
+    let path = try render(view, size: CGSize(width: 1120, height: 220), to: "08-day-derived.png")
+    print("SNAPSHOT \(path)")
+    #expect(FileManager.default.fileExists(atPath: path))
+}
+
+/// The board picker shown when scanning finds one or more boards — you choose yours instead of the
+/// app grabbing whichever advertised first.
+@MainActor
+@Test func snapshotBoardPicker() throws {
+    let boards = [
+        DiscoveredBoard(id: UUID(), name: "Vertex-A2F1", rssi: -48),
+        DiscoveredBoard(id: UUID(), name: "Vertex-9C03", rssi: -67),
+        DiscoveredBoard(id: UUID(), name: "NeuroFocus dev", rssi: -82),
+    ]
+    let view = BoardPicker(boards: boards, onPick: { _ in }, onRescan: {})
+        .padding(24)
+        .frame(width: 460, height: 380, alignment: .top)
+        .background(Ink.bg)
+    let path = try render(view, size: CGSize(width: 460, height: 380), to: "09-board-picker.png")
+    print("SNAPSHOT \(path)")
+    #expect(boards.count == 3)
+}
