@@ -12,6 +12,7 @@
 		8DE3481D300BB875009FBB30 /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = BB0000000000000000000003 /* ClerkKit */; };
 		8DE3481E300BB875009FBB30 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = BB0000000000000000000004 /* ClerkKitUI */; };
 		8DE3481F300BB875009FBB30 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = BB0000000000000000000005 /* PostHog */; };
+		8DE34820300BB875009FBB30 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = BB0000000000000000000006 /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,6 +62,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8DE3481E300BB875009FBB30 /* ClerkKitUI in Frameworks */,
+				8DE34820300BB875009FBB30 /* Sparkle in Frameworks */,
 				8DE3481D300BB875009FBB30 /* ClerkKit in Frameworks */,
 				8DE3481C300BB875009FBB30 /* ClerkConvex in Frameworks */,
 				8DE3481B300BB875009FBB30 /* ConvexMobile in Frameworks */,
@@ -130,6 +132,7 @@
 				BB0000000000000000000003 /* ClerkKit */,
 				BB0000000000000000000004 /* ClerkKitUI */,
 				BB0000000000000000000005 /* PostHog */,
+				BB0000000000000000000006 /* Sparkle */,
 			);
 			productName = neurosync;
 			productReference = 8D1917803003A88300BBECC3 /* neurosync.app */;
@@ -218,6 +221,7 @@
 				AA0000000000000000000002 /* XCRemoteSwiftPackageReference "clerk-convex-swift" */,
 				AA0000000000000000000003 /* XCRemoteSwiftPackageReference "clerk-ios" */,
 				AA0000000000000000000004 /* XCRemoteSwiftPackageReference "posthog-ios" */,
+				AA0000000000000000000005 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8D1917813003A88300BBECC3 /* Products */;
@@ -432,6 +436,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "NeuroSync connects to your NeuroFocus Vertex EEG insert over Bluetooth to read its signal.";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "NeuroSync reads your calendar so the Day view can show what you were doing while it was measuring. Read-only — it never creates, edits or deletes an event.";
+				INFOPLIST_FILE = neurosync/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -467,6 +472,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "NeuroSync connects to your NeuroFocus Vertex EEG insert over Bluetooth to read its signal.";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "NeuroSync reads your calendar so the Day view can show what you were doing while it was measuring. Read-only — it never creates, edits or deletes an event.";
+				INFOPLIST_FILE = neurosync/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -639,6 +645,14 @@
 				minimumVersion = 3.66.1;
 			};
 		};
+		AA0000000000000000000005 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.6.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -666,6 +680,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = AA0000000000000000000004 /* XCRemoteSwiftPackageReference "posthog-ios" */;
 			productName = PostHog;
+		};
+		BB0000000000000000000006 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000005 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

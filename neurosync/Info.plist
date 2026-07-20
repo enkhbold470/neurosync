@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>SUFeedURL</key>
+	<string>https://neurofocus.dev/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>N4S6yNgnNGSCnMUvwKnbPzEQK0ANNLiEzpou8tZqZLc=</string>
+</dict>
+</plist>
