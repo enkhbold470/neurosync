@@ -38,6 +38,9 @@ struct NeuroSyncApp: App {
     /// key are present; otherwise inert and the app stays fully local-first.
     @State private var cloud = ConvexCloud()
 
+    /// Sparkle auto-update. Checks the appcast at launch and offers signed updates.
+    @StateObject private var updater = UpdaterModel()
+
     var body: some Scene {
         WindowGroup {
             // Only touch Clerk when a deployment + key are configured — otherwise the app is fully
@@ -50,6 +53,11 @@ struct NeuroSyncApp: App {
             }
         }
         .windowResizability(.contentMinSize)
+        .commands {
+            CommandGroup(after: .appInfo) {
+                CheckForUpdatesCommand(updater: updater)
+            }
+        }
 
         MenuBarExtra {
             MenuBarPanel(model: model)

@@ -86,4 +86,23 @@ echo "▸ Gatekeeper check (as a fresh Mac would see it)"
 spctl -a -vv "$APP" || true
 stapler validate "$DMG" || true
 
+echo "▸ Sparkle appcast (signs the DMG with your Keychain EdDSA key)"
+# generate_appcast ships inside Sparkle's resolved binary artifact. It reads the DMG's version,
+# signs it with the private key stored in your login Keychain by generate_keys, and writes
+# appcast.xml. The enclosure points at the stable GitHub "latest/download" URL; the appcast.xml
+# itself is served from SUFeedURL (https://neurofocus.dev/appcast.xml — commit it into finc).
+GEN_APPCAST="$(find "$HOME/Library/Developer/Xcode/DerivedData" -path '*artifacts/sparkle/Sparkle/bin/generate_appcast' 2>/dev/null | head -1)"
+if [ -n "$GEN_APPCAST" ]; then
+  APPCAST_DIR="$BUILD_DIR/appcast"; rm -rf "$APPCAST_DIR"; mkdir -p "$APPCAST_DIR"
+  cp "$DMG" "$APPCAST_DIR/"
+  "$GEN_APPCAST" \
+    --download-url-prefix "https://github.com/enkhbold470/neurosync/releases/latest/download/" \
+    "$APPCAST_DIR"
+  echo "  → $APPCAST_DIR/appcast.xml"
+  echo "    Publish: (1) attach $DMG to the GitHub release, (2) copy appcast.xml to"
+  echo "    neurofocus-finc/static/appcast.xml and deploy — that's what SUFeedURL points at."
+else
+  echo "  ⚠ generate_appcast not found. Build the app once (resolves Sparkle), then re-run."
+fi
+
 echo "✓ Done: $DMG"
