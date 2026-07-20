@@ -428,3 +428,35 @@ private func syntheticDayFixture() -> [Day] {
     cachedFixture = [day]
     return cachedFixture!
 }
+
+/// Regression guard: `rollUp` (which `DayModel.load` runs on the main thread) must stay fast on a full
+/// day. It used to take ~5.4 s here because the findings marker loop was
+/// O(markers × epochs × sessions × epochs) — a multi-second main-thread hang (the "spinning cursor").
+/// The fixed per-session walk does the same day in ~70 ms.
+@Test func rollUpStaysUnderMainThreadBudget() {
+    let base = Date(timeIntervalSince1970: 1_700_000_000)
+    let perSession = 1200
+    var sessions: [SessionRecord] = []
+    var markers: [Marker] = []
+    for si in 0..<12 {
+        let sStart = base.addingTimeInterval(Double(si) * 1500)
+        let eps = (0..<perSession).map { i in
+            Epoch(t: Double(i), focus: 60, calm: 30, clench: 10, engagement: 1,
+                  bands: [:], alphaPeak: 10, rmsUv: 12,
+                  signalOk: true, fsOk: true, calibrating: false, state: .focused)
+        }
+        let span = ActivitySpan(kind: .coding, label: "s\(si)", start: sStart,
+                                end: sStart.addingTimeInterval(Double(perSession)),
+                                source: .appWatch, bundleId: "com.x")
+        let m = Marker(kind: .stressed, at: sStart.addingTimeInterval(60), note: nil)
+        markers.append(m)
+        sessions.append(SessionRecord(startedAt: sStart, endedAt: sStart.addingTimeInterval(Double(perSession)),
+                                      device: DeviceInfo(name: "t", sps: 330), baseline: nil,
+                                      epochs: eps, activities: [span], markers: [m]))
+    }
+    let t0 = Date()
+    let day = rollUp(sessions: sessions, markers: markers, date: base)
+    let ms = Date().timeIntervalSince(t0) * 1000
+    print("rollUp: \(sessions.count) sessions × \(perSession) eps (\(sessions.count*perSession) total), \(markers.count) markers → \(String(format: "%.0f", ms)) ms")
+    #expect(ms < 1500, "rollUp took \(Int(ms))ms — the O(n²) findings marker loop is back; it will hang the main thread")
+}

@@ -303,12 +303,16 @@ nonisolated func findings(for day: Day) -> [Finding] {
     // Self-reported markers, matched to what the signal was doing around them. This is the only
     // place stress and anxiety appear, and they appear as YOUR WORDS, not as a measurement.
     for m in day.markers where m.kind == .stressed || m.kind == .anxious {
-        let around = day.trustedEpochs.filter { e in
-            guard let s = day.sessions.first(where: { $0.epochs.contains(e) }) else { return false }
-            let t = s.date(at: e.t)
-            return abs(t.timeIntervalSince(m.at)) <= 300
+        // Trusted epochs within ±5 min of the marker, and their jaw load. Walk each session's own
+        // epochs directly — the old `sessions.first(where: { $0.epochs.contains(e) })` reverse lookup
+        // was O(markers × epochs × sessions × epochs) of struct compares and blocked the main thread
+        // for seconds on a full day (see PERF_rollUpBigDayTiming).
+        let clench = day.sessions.flatMap { s in
+            s.epochs.compactMap { e -> Double? in
+                guard e.trustworthy, abs(s.date(at: e.t).timeIntervalSince(m.at)) <= 300 else { return nil }
+                return e.clench
+            }
         }
-        let clench = around.compactMap(\.clench)
         if clench.count >= 30 {
             out.append(Finding(
                 tone: .neutral,
