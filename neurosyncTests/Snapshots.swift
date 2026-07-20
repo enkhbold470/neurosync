@@ -370,3 +370,28 @@ private func snapshotFixtureDay() -> Day {
     print("SNAPSHOT \(path)")
     #expect(boards.count == 3)
 }
+
+/// The one-page main window (design import) wired to a fixture day + realistic metrics. Proves the
+/// aurora/glass look composes with REAL bindings — the focus number, hour chart, yesterday card and
+/// honest hardware footer all render from data, not fabricated constants.
+@MainActor
+@Test func snapshotSessionView() throws {
+    var m = FocusMetrics()
+    m.focus = 84
+    m.rmsUv = 12.4
+    m.signalOk = true
+    let day = snapshotFixtureDay()
+    let view = ZStack(alignment: .top) {
+        AuroraBackground()
+        SessionView(
+            metrics: m, withheld: false, gateReason: nil, sps: 500,
+            title: "Live session", subtitle: "streaming · around-ear EEG",
+            day: day, yesterday: day
+        )
+        .padding(24)
+    }
+    .frame(width: 860, height: 880)
+    let path = try render(view, size: CGSize(width: 860, height: 880), to: "10-session.png")
+    print("SNAPSHOT \(path)")
+    #expect(FileManager.default.fileExists(atPath: path))
+}

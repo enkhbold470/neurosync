@@ -30,35 +30,21 @@ struct ContentView: View {
     let days: DayModel
     var cloud: ConvexCloud
 
-    @State private var surface: Surface = .live
     /// Held so the sign-in observer below can flush the backlog when auth flips on.
     @State private var syncController: CloudSyncController?
 
     var body: some View {
         VStack(spacing: 0) {
-            Header(model: model, days: days, cloud: cloud, surface: $surface)
+            Header(model: model, days: days, cloud: cloud)
 
             if model.nudge != .none {
                 NudgeBanner(level: model.nudge)
             }
 
-            Group {
-                switch surface {
-                case .live:
-                    if model.isConnected {
-                        Instrument(model: model)
-                    } else if model.blockActive {
-                        // A block is running with no board — the headset-free tier. Show it, don't
-                        // fall back to the connect hero.
-                        BlockLiveView(model: model)
-                    } else {
-                        FocusHome(model: model)
-                    }
-                case .day:
-                    DayView(model: days)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // One page: live focus + today + yesterday, with connect / board-pick / focus-block
+            // controls folded in. Replaces the old LIVE/DAY split.
+            SessionScreen(model: model, days: days)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             SpecStrip(snap: model.snap)
         }
@@ -139,7 +125,6 @@ private struct Header: View {
     let model: VertexModel
     let days: DayModel
     var cloud: ConvexCloud
-    @Binding var surface: Surface
 
     var body: some View {
         HStack(spacing: Space.lg) {
@@ -155,15 +140,11 @@ private struct Header: View {
                 .tracking(1.2)
                 .foregroundStyle(Ink.muted)
 
-            SurfacePicker(surface: $surface)
-
             Spacer()
 
             // Self-report. The ONLY place stress and anxiety enter this app — you say them,
             // the instrument records that you said them, nothing pretends to have measured them.
-            if surface == .live {
-                MarkerRow(model: model, days: days)
-            }
+            MarkerRow(model: model, days: days)
 
             if model.isConnected, let info = model.snap.info {
                 RatePicker(current: info.sps) { model.setRate(index: $0) }
