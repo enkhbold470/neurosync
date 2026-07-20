@@ -24,7 +24,12 @@ struct CloudSyncButton: View {
                     Label("Sign in to sync", systemImage: "icloud.and.arrow.up")
                 }
                 .buttonStyle(InstrumentButton())
-                .sheet(isPresented: $showAuth) { AuthSheet { showAuth = false } }
+                .sheet(isPresented: $showAuth) {
+                    AuthSheet { showAuth = false }
+                        // Size the sheet to AuthView's own content instead of a guessed fixed width,
+                        // so the iPhone-derived form can never be clipped on macOS.
+                        .presentationSizing(.fitted)
+                }
             }
         }
     }
@@ -60,9 +65,9 @@ struct CloudSyncButton: View {
                 AuthView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            // ClerkKit's AuthView has a fixed minimum content width built for iPhone; at 460 it still
-            // overflowed and clipped the email field + the "last used" chip on macOS. 620 clears it.
-            .frame(width: 620, height: 740)
+            // Let AuthView drive the width (with .presentationSizing(.fitted) on the sheet). A generous
+            // floor keeps it from ever collapsing narrow enough to clip the iPhone-derived form.
+            .frame(minWidth: 620, idealWidth: 680, minHeight: 680, idealHeight: 720)
             .background(Ink.panel)
             // Match the app's accent so the sheet doesn't read as a stock white Clerk form.
             .environment(\.clerkTheme, ClerkTheme(
