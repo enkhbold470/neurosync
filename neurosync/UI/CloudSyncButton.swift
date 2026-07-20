@@ -60,8 +60,14 @@ struct CloudSyncButton: View {
                 AuthView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .frame(width: 460, height: 640)
+            // ClerkKit's AuthView has a fixed minimum content width built for iPhone; at 460 it still
+            // overflowed and clipped the email field + the "last used" chip on macOS. 620 clears it.
+            .frame(width: 620, height: 740)
             .background(Ink.panel)
+            // Match the app's accent so the sheet doesn't read as a stock white Clerk form.
+            .environment(\.clerkTheme, ClerkTheme(
+                colors: .init(primary: Ink.amber),
+                design: .init(borderRadius: 12)))
         }
     }
 
