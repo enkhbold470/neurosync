@@ -81,6 +81,10 @@ struct SessionScreen: View {
             HStack(spacing: 10) {
                 Image(systemName: "dot.radiowaves.left.and.right").foregroundStyle(Ink.amber)
                 Text("Streaming live").font(.label(12)).foregroundStyle(Color(hex: 0xA2A0AB))
+                // Optional, like the XM4 NC optimizer — tailors the baseline to you. Not required:
+                // a score already shows against the generic default from the moment you connect.
+                Button { model.optimize() } label: { Label("Optimize", systemImage: "wand.and.stars") }
+                    .buttonStyle(InstrumentButton())
                 Spacer()
                 ForEach([15, 25, 50], id: \.self) { m in
                     Button("\(m)m") { model.startBlock(minutes: m) }
@@ -204,7 +208,7 @@ struct SessionView: View {
             if let insight { insightRow(insight) }
             HStack(alignment: .top, spacing: 12) {
                 yesterdayCard
-                hardwareCard
+                topAppsCard
             }
         }
     }
@@ -324,29 +328,44 @@ struct SessionView: View {
         .padding(15).frame(maxWidth: .infinity, alignment: .leading).glassPane()
     }
 
-    private var hardwareCard: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("SENSOR").font(.data(9.5, .semibold)).tracking(1.2).foregroundStyle(Color(hex: 0x6F6D78))
-            Group {
-                if sps > 0 {
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text("\(sps)").font(.system(size: 26, weight: .heavy)).foregroundStyle(.white)
-                        Text("SPS").font(.label(11)).foregroundStyle(Color(hex: 0xA2A0AB))
+    /// Where your focus actually went — the apps you were in, ranked by your median focus while in
+    /// them. The app identity is REAL (the frontmost bundle id the session recorded); the focus is the
+    /// gated Pope score. Real app icons via NSWorkspace.
+    private var topAppsCard: some View {
+        let ranked = topApps(day)
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("WHERE YOUR FOCUS WENT").font(.data(9.5, .semibold)).tracking(1.2)
+                .foregroundStyle(Color(hex: 0x6F6D78))
+            if ranked.isEmpty {
+                Text("Record a session and this ranks the apps that held your focus.")
+                    .font(.label(11)).foregroundStyle(Color(hex: 0x6F6D78))
+                    .fixedSize(horizontal: false, vertical: true).padding(.top, 4)
+            } else {
+                ForEach(Array(ranked.enumerated()), id: \.offset) { i, app in
+                    HStack(spacing: 11) {
+                        Text("\(i + 1)").font(.data(11, .bold)).foregroundStyle(Color(hex: 0x6F6D78)).frame(width: 14)
+                        appIconView(app.bundleId)
+                        Text(app.label).font(.label(13, .semibold)).foregroundStyle(.white).lineLimit(1)
+                        Spacer(minLength: 6)
+                        Text("\(Int(app.focus.rounded()))").font(.data(15, .bold)).foregroundStyle(Ink.amber)
+                        Text("focus").font(.data(8)).foregroundStyle(Color(hex: 0x6F6D78))
                     }
-                } else {
-                    Text("no board").font(.system(size: 20, weight: .bold)).foregroundStyle(Color(hex: 0x6F6D78))
                 }
             }
-            .padding(.top, 10)
-            Text("single around-ear dry channel").font(.label(11)).foregroundStyle(Color(hex: 0xA2A0AB))
-            VStack(spacing: 8) {
-                statRow("Score", "Pope β/(α+θ)")
-                statRow("RMS", String(format: "%.2f µV", metrics.rmsUv))
-                statRow("Contact", metrics.signalOk ? "OK" : "no contact")
-            }
-            .padding(.top, 13)
         }
         .padding(15).frame(maxWidth: .infinity, alignment: .leading).glassPane()
+    }
+
+    @ViewBuilder private func appIconView(_ bundleId: String?) -> some View {
+        if let id = bundleId,
+           let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) {
+            Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+                .resizable().frame(width: 26, height: 26)
+        } else {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(Color.white.opacity(0.1)).frame(width: 26, height: 26)
+                .overlay(Image(systemName: "app.dashed").font(.system(size: 12)).foregroundStyle(Color(hex: 0x6F6D78)))
+        }
     }
 
     private func statRow(_ l: String, _ v: String) -> some View {
@@ -387,6 +406,23 @@ func peakWindow(_ bars: [HourFocus]) -> String {
           let last = bars.last(where: { ($0.value ?? 0) >= peak - 6 }) else { return "—" }
     func label(_ h: Int) -> String { h == 12 ? "12 PM" : (h > 12 ? "\(h - 12) PM" : "\(h) AM") }
     return "\(label(first.hour))–\(label(last.hour))"
+}
+
+/// The day's apps ranked by median focus while you were in them. App identity is the real recorded
+/// frontmost bundle id; focus is the gated Pope score. Top 4.
+func topApps(_ day: Day?) -> [(label: String, bundleId: String?, focus: Double)] {
+    guard let day else { return [] }
+    var byApp: [String: (label: String, bundleId: String?, focuses: [Double])] = [:]
+    for seg in day.segments where seg.sayable {
+        guard let mf = seg.medianFocus else { continue }
+        let key = seg.span.bundleId ?? seg.span.label
+        byApp[key, default: (seg.span.label, seg.span.bundleId, [])].focuses.append(mf)
+    }
+    return byApp.values
+        .map { (label: $0.label, bundleId: $0.bundleId, focus: median($0.focuses)) }
+        .sorted { $0.focus > $1.focus }
+        .prefix(4)
+        .map { ($0.label, $0.bundleId, $0.focus) }
 }
 
 struct DaySummaryVM { let deepFlow: String; let longestBlock: String; let contextSwitches: Int; let bestBlock: String }

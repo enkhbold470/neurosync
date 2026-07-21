@@ -146,10 +146,6 @@ private struct Header: View {
             // the instrument records that you said them, nothing pretends to have measured them.
             MarkerRow(model: model, days: days)
 
-            if model.isConnected, let info = model.snap.info {
-                RatePicker(current: info.sps) { model.setRate(index: $0) }
-            }
-
             StatusPip(state: model.state)
 
             CloudSyncButton(cloud: cloud)
@@ -204,7 +200,7 @@ private struct MarkerRow: View {
     let model: VertexModel
     let days: DayModel
 
-    private let kinds: [MarkerKind] = [.stressed, .anxious, .breakTaken, .walk, .coffee]
+    private let kinds: [MarkerKind] = [.stressed, .anxious, .breakTaken]
 
     var body: some View {
         HStack(spacing: 2) {
