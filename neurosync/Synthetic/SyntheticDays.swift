@@ -150,7 +150,7 @@ private nonisolated func yesterdayScripts() -> [SessionScript] {
                 SynthBlock(startSec: 0, durationSec: 120, profile: .baseline, rampSec: 0),
                 SynthBlock(startSec: 120, durationSec: 480, profile: .focused)
             ],
-            activities: [(.coding, "Claude coding", .appWatch, "com.anthropic.claude", 0, 600)],
+            activities: [(.coding, "Cursor", .appWatch, "com.todesktop.230313mzl4w4u92", 0, 600)],
             markers: [],
             seed: 0x5EED_0001
         ),
@@ -164,7 +164,11 @@ private nonisolated func yesterdayScripts() -> [SessionScript] {
                 SynthBlock(startSec: 900, durationSec: 180, profile: .baseline),
                 SynthBlock(startSec: 1080, durationSec: 720, profile: .focused, rampSec: 45)
             ],
-            activities: [(.coding, "Claude coding", .appWatch, "com.anthropic.claude", 0, 1800)],
+            activities: [
+                (.coding, "Cursor", .appWatch, "com.todesktop.230313mzl4w4u92", 0, 900),
+                (.browsing, "Chrome", .appWatch, "com.google.Chrome", 900, 1080),
+                (.coding, "VS Code", .appWatch, "com.microsoft.VSCode", 1080, 1800)
+            ],
             markers: [],
             seed: 0x5EED_0002
         ),
@@ -179,7 +183,7 @@ private nonisolated func yesterdayScripts() -> [SessionScript] {
                 SynthBlock(startSec: 60, durationSec: 1080, profile: .talking, rampSec: 45),
                 SynthBlock(startSec: 1140, durationSec: 60, profile: .baseline)
             ],
-            activities: [(.meeting, "1:1 with Elijah", .calendar, nil, 0, 1200)],
+            activities: [(.onCall, "Zoom", .appWatch, "us.zoom.xos", 0, 1200)],
             markers: [],
             seed: 0x5EED_0003
         ),
@@ -195,7 +199,12 @@ private nonisolated func yesterdayScripts() -> [SessionScript] {
                 SynthBlock(startSec: 1320, durationSec: 540, profile: .disengaged, rampSec: 180),
                 SynthBlock(startSec: 1860, durationSec: 540, profile: .drowsy, rampSec: 180)
             ],
-            activities: [(.coding, "Claude coding", .appWatch, "com.anthropic.claude", 0, 2400)],
+            activities: [
+                (.coding, "VS Code", .appWatch, "com.microsoft.VSCode", 0, 900),
+                (.comms, "iMessage", .appWatch, "com.apple.MobileSMS", 900, 1320),
+                (.comms, "Telegram", .appWatch, "ru.keepcoder.Telegram", 1320, 1860),
+                (.comms, "WhatsApp", .appWatch, "net.whatsapp.WhatsApp", 1860, 2400)
+            ],
             markers: [
                 (.coffee, 120, nil),
                 (.breakTaken, 1320, "too much — stepped away"),
@@ -224,8 +233,9 @@ private nonisolated func todayScripts() -> [SessionScript] {
                 SynthBlock(startSec: 2280, durationSec: 120, profile: .baseline)
             ],
             activities: [
-                (.meeting, "Standup", .calendar, nil, 240, 600),
-                (.coding, "Claude coding", .appWatch, "com.anthropic.claude", 720, 2400)
+                (.onCall, "Zoom", .appWatch, "us.zoom.xos", 240, 600),
+                (.coding, "Claude", .appWatch, "com.anthropic.claudefordesktop", 720, 1620),
+                (.browsing, "Chrome", .appWatch, "com.google.Chrome", 1620, 2400)
             ],
             markers: [
                 (.stressed, 2280, "can't hold the thread on this")
@@ -242,9 +252,7 @@ private nonisolated func todayScripts() -> [SessionScript] {
                 SynthBlock(startSec: 900, durationSec: 120, profile: .disengaged, rampSec: 45),
                 SynthBlock(startSec: 1020, durationSec: 780, profile: .focused, rampSec: 60)
             ],
-            activities: [
-                (.design, "Design session", .appWatch, "com.figma.Desktop", 0, 1800)
-            ],
+            activities: [(.coding, "Cursor", .appWatch, "com.todesktop.230313mzl4w4u92", 0, 1800)],
             markers: [],
             seed: 0x5EED_0012
         ),
@@ -261,7 +269,8 @@ private nonisolated func todayScripts() -> [SessionScript] {
                 SynthBlock(startSec: 1980, durationSec: 420, profile: .drowsy, rampSec: 180)
             ],
             activities: [
-                (.onCall, "On-call rotation", .calendar, nil, 0, 2400)
+                (.onCall, "Zoom", .appWatch, "us.zoom.xos", 0, 1200),
+                (.comms, "WhatsApp", .appWatch, "net.whatsapp.WhatsApp", 1200, 2400)
             ],
             markers: [
                 (.anxious, 600, "pager went off twice"),
