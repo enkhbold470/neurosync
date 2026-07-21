@@ -34,22 +34,29 @@ struct ContentView: View {
     @State private var syncController: CloudSyncController?
 
     var body: some View {
-        VStack(spacing: 0) {
-            Header(model: model, days: days, cloud: cloud)
+        ZStack {
+            // One aurora for the whole window — header, body and footer all sit on the same
+            // background, so there's no light chrome seam around a dark body.
+            AuroraBackground()
+            VStack(spacing: 0) {
+                Header(model: model, days: days, cloud: cloud)
 
-            if model.nudge != .none {
-                NudgeBanner(level: model.nudge)
+                if model.nudge != .none {
+                    NudgeBanner(level: model.nudge)
+                }
+
+                // One page: live focus + today + yesterday, with connect / board-pick / focus-block
+                // controls folded in. Replaces the old LIVE/DAY split.
+                SessionScreen(model: model, days: days)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                SpecStrip(snap: model.snap)
             }
-
-            // One page: live focus + today + yesterday, with connect / board-pick / focus-block
-            // controls folded in. Replaces the old LIVE/DAY split.
-            SessionScreen(model: model, days: days)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            SpecStrip(snap: model.snap)
         }
-        .background(Ink.bg)
         .frame(minWidth: 1120, minHeight: 760)
+        // The aurora is always dark, so pin the whole app dark — otherwise Ink.* adaptive tokens
+        // (header/footer text) go near-black in Light mode and vanish on the aurora.
+        .preferredColorScheme(.dark)
         // ONE task, keyed on auth state, so there is no race between wiring and the sign-in flush.
         // It runs on first appear (signedIn=false → syncPending is a guarded no-op) and again the
         // moment `signedIn` flips true — which is what mirrors the local backlog to the cloud. Without
@@ -161,8 +168,8 @@ private struct Header: View {
         }
         .padding(.horizontal, Space.xl)
         .padding(.vertical, Space.md)
-        .glassControl(radius: 0)
-        .overlay(Rectangle().frame(height: 1).foregroundStyle(Ink.rule), alignment: .bottom)
+        .background(Color.black.opacity(0.22))
+        .overlay(Rectangle().frame(height: 1).foregroundStyle(Color.white.opacity(0.08)), alignment: .bottom)
     }
 }
 

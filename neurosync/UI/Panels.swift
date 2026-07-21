@@ -256,7 +256,7 @@ struct SpecStrip: View {
         }
         .padding(.horizontal, Space.xl)
         .padding(.vertical, 7)
-        .glassControl(radius: 0)
-        .overlay(Rectangle().frame(height: 1).foregroundStyle(Ink.rule), alignment: .top)
+        .background(Color.black.opacity(0.22))
+        .overlay(Rectangle().frame(height: 1).foregroundStyle(Color.white.opacity(0.08)), alignment: .top)
     }
 }
