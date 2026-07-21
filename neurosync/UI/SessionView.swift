@@ -55,7 +55,7 @@ struct SessionScreen: View {
                             metrics: model.metrics, withheld: withheld, gateReason: gateReason,
                             sps: model.snap.info?.sps ?? Int(model.snap.fs),
                             title: title, subtitle: subtitle,
-                            hourly: hourlyMedianFocus(days.days),
+                            hourly: hourlyMedianFocus(days.selected.map { [$0] } ?? []),
                             day: days.selected, yesterday: yesterday)
                         controls
                     }
@@ -413,8 +413,8 @@ struct SessionView: View {
 
 struct HourFocus: Identifiable { let hour: Int; let value: Double?; var id: Int { hour } }
 
-/// Median focus per hour of day, averaged across ALL days (that's what "avg focus by hour of day"
-/// means) — a single day is too sparse to read. Trusted epochs only; empty hours stay nil.
+/// Median focus per hour for the given day(s) — the caller passes the SELECTED day so the chart
+/// changes when you switch days. Trusted epochs only; empty hours stay nil (drawn as a baseline tick).
 func hourlyMedianFocus(_ days: [Day]) -> [HourFocus] {
     var buckets: [[Double]] = Array(repeating: [], count: 24)
     let cal = Calendar.current
