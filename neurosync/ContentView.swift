@@ -224,6 +224,7 @@ private struct MarkerRow: View {
         }
         .padding(.horizontal, 2)
         .background(Ink.rule.opacity(0.6), in: RoundedRectangle(cornerRadius: Ink.radius, style: .continuous))
+        .focusEffectDisabled()   // no stray blue keyboard-focus ring on the first marker button
         .disabled(!days.hasLocation)
         .opacity(days.hasLocation ? 1 : 0.35)
     }
@@ -284,27 +285,29 @@ private struct RatePicker: View {
     let current: Int
     let onPick: (Int) -> Void
 
+    // Only the two defensible rates the product exposes — both ≥175 SPS (fsOk). The higher ladder
+    // rungs cost battery/bandwidth without moving the focus band. "Lite" 175, "Max" 330.
+    private var options: [(label: String, sps: Int, index: Int)] {
+        [("LITE", 175, Vertex.rateLadder.firstIndex(of: 175) ?? 3),
+         ("MAX", 330, Vertex.rateLadder.firstIndex(of: 330) ?? 4)]
+    }
+
     var body: some View {
         HStack(spacing: 2) {
-            ForEach(Array(Vertex.rateLadder.enumerated()), id: \.offset) { idx, sps in
-                let ok = focusFeasibility(fs: Double(sps)).ok
-                let isCurrent = sps == current
+            ForEach(options, id: \.index) { o in
+                let isCurrent = o.sps == current
                 Button {
-                    onPick(idx)
+                    onPick(o.index)
                 } label: {
-                    Text("\(sps)")
+                    Text(o.label)
                         .font(.data(11, isCurrent ? .bold : .regular))
-                        .foregroundStyle(
-                            isCurrent ? Ink.onAccent : (ok ? Ink.dim : Ink.muted.opacity(0.55))
-                        )
-                        .frame(width: 44, height: 26)
+                        .foregroundStyle(isCurrent ? Ink.onAccent : Ink.dim)
+                        .frame(width: 52, height: 26)
                         .background(isCurrent ? Ink.amber : Color.clear,
                                     in: RoundedRectangle(cornerRadius: Ink.radius - 2, style: .continuous))
                 }
                 .buttonStyle(.plain)
-                .help(ok
-                      ? "\(sps) SPS — focus score is defensible"
-                      : (focusFeasibility(fs: Double(sps)).reason ?? ""))
+                .help("\(o.sps) SPS")
             }
         }
         .padding(2)
