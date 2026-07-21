@@ -43,8 +43,8 @@ struct SessionScreen: View {
     let days: DayModel
 
     var body: some View {
-        ZStack {
-            AuroraBackground()
+        // No aurora here — ContentView owns the one window-wide AuroraBackground.
+        Group {
             if !days.hasLocation {
                 grantFolder
             } else {
