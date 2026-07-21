@@ -50,6 +50,7 @@ struct SessionScreen: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
+                        dayPicker
                         SessionView(
                             metrics: model.metrics, withheld: withheld, gateReason: gateReason,
                             sps: model.snap.info?.sps ?? Int(model.snap.fs),
@@ -62,6 +63,37 @@ struct SessionScreen: View {
                 }
             }
         }
+    }
+
+    // ── Day picker: Today / Yesterday / date ─────────────────────────────────
+    @ViewBuilder private var dayPicker: some View {
+        if days.hasLocation, !days.days.isEmpty {
+            HStack(spacing: 8) {
+                ForEach(days.days.reversed()) { d in
+                    let selected = days.selected?.key == d.key
+                    Button { days.select(d.key) } label: {
+                        Text(dayLabel(d))
+                            .font(.data(11, selected ? .bold : .medium))
+                            .foregroundStyle(selected ? Ink.onAccent : Color(hex: 0xA2A0AB))
+                            .padding(.horizontal, 13).padding(.vertical, 6)
+                            .background(selected ? AnyShapeStyle(Ink.amber) : AnyShapeStyle(Color.white.opacity(0.05)),
+                                        in: Capsule(style: .continuous))
+                            .overlay(Capsule(style: .continuous).strokeBorder(Color.white.opacity(0.08), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                }
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    private func dayLabel(_ d: Day) -> String {
+        let cal = Calendar.current
+        let df = DateFormatter(); df.dateFormat = "MMM d"
+        let date = df.string(from: d.date)
+        if cal.isDateInToday(d.date) { return "TODAY · \(date)" }
+        if cal.isDateInYesterday(d.date) { return "YESTERDAY · \(date)" }
+        return date
     }
 
     // ── Live controls: connect / pick a board / start-stop a block ───────────
