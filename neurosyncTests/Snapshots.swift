@@ -381,11 +381,15 @@ private func snapshotFixtureDay() -> Day {
     m.rmsUv = 12.4
     m.signalOk = true
     let day = snapshotFixtureDay()
+    let profile: [Int: Double] = [6: 34, 7: 47, 8: 63, 9: 82, 10: 88, 11: 78, 12: 54,
+                                  13: 61, 15: 66, 16: 57, 17: 49, 19: 38, 20: 29, 21: 22]
+    let hourly = (6...21).map { HourFocus(hour: $0, value: profile[$0]) }  // 14/33/21 empty at 14,18
     let view = ZStack(alignment: .top) {
         AuroraBackground()
         SessionView(
             metrics: m, withheld: false, gateReason: nil, sps: 500,
             title: "Live session", subtitle: "streaming · around-ear EEG",
+            hourly: hourly,
             day: day, yesterday: day
         )
         .padding(24)

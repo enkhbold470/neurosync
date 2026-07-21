@@ -54,6 +54,7 @@ struct SessionScreen: View {
                             metrics: model.metrics, withheld: withheld, gateReason: gateReason,
                             sps: model.snap.info?.sps ?? Int(model.snap.fs),
                             title: title, subtitle: subtitle,
+                            hourly: hourlyMedianFocus(days.days),
                             day: days.selected, yesterday: yesterday)
                         controls
                     }
@@ -184,6 +185,7 @@ struct SessionView: View {
     let sps: Int
     let title: String
     let subtitle: String
+    let hourly: [HourFocus]
     let day: Day?
     let yesterday: Day?
 
@@ -213,19 +215,24 @@ struct SessionView: View {
                 Text(title).font(.label(14, .semibold)).foregroundStyle(.white)
                 Text(subtitle).font(.data(10.5)).foregroundStyle(Color(hex: 0x6F6D78))
             }
-            HStack(alignment: .firstTextBaseline, spacing: 9) {
-                Text(focusText)
-                    .font(.system(size: 62, weight: .heavy))
-                    .foregroundStyle(withheld ? Color(hex: 0x6F6D78) : .white)
-                    .contentTransition(.numericText())
-                if !withheld {
-                    Text("%").font(.system(size: 24, weight: .bold)).foregroundStyle(Color(hex: 0x6F6D78))
+            if withheld {
+                // No live score — show the state + why, not a giant grey dash.
+                HStack(spacing: 10) {
+                    statePill
+                    Spacer(minLength: 0)
                 }
-                statePill.padding(.leading, 6)
-            }
-            if withheld, let gateReason {
-                Text(gateReason).font(.label(11)).foregroundStyle(Color(hex: 0xA2A0AB))
-                    .fixedSize(horizontal: false, vertical: true)
+                if let gateReason {
+                    Text(gateReason).font(.label(12)).foregroundStyle(Color(hex: 0xA2A0AB))
+                        .fixedSize(horizontal: false, vertical: true).padding(.top, 2)
+                }
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 9) {
+                    Text(focusText)
+                        .font(.system(size: 62, weight: .heavy)).foregroundStyle(.white)
+                        .contentTransition(.numericText())
+                    Text("%").font(.system(size: 24, weight: .bold)).foregroundStyle(Color(hex: 0x6F6D78))
+                    statePill.padding(.leading, 6)
+                }
             }
         }
         .padding(20).frame(maxWidth: .infinity, alignment: .leading).glassPane()
@@ -242,7 +249,7 @@ struct SessionView: View {
     }
 
     private var hourChart: some View {
-        let bars = hourlyMedianFocus(day)
+        let bars = hourly
         let peak = bars.compactMap(\.value).max() ?? 0
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -253,17 +260,21 @@ struct SessionView: View {
                     Text("peak · \(peakWindow(bars))").font(.data(10.5, .semibold)).foregroundStyle(Ink.amber)
                 }
             }
-            HStack(alignment: .bottom, spacing: 5) {
+            HStack(alignment: .bottom, spacing: 6) {
                 ForEach(bars, id: \.hour) { b in
                     let v = b.value ?? 0
                     let isPeak = b.value != nil && peak > 0 && v >= peak - 6
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    // Empty hours are a thin baseline tick, not a full-height ghost bar, so a sparse
+                    // day reads as "quiet here", not "broken".
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
                         .fill(b.value == nil
-                              ? AnyShapeStyle(Color.white.opacity(0.06))
+                              ? AnyShapeStyle(Color.white.opacity(0.05))
                               : (isPeak
                                  ? AnyShapeStyle(LinearGradient(colors: [Color(hex: 0xE79A5C), Color(hex: 0xF7D0A6)], startPoint: .bottom, endPoint: .top))
-                                 : AnyShapeStyle(Color.white.opacity(0.14))))
-                        .frame(height: max(6, CGFloat(v) / 100 * 104)).frame(maxWidth: .infinity)
+                                 : AnyShapeStyle(Color.white.opacity(0.16))))
+                        .frame(width: 34)
+                        .frame(height: b.value == nil ? 4 : max(10, CGFloat(v) / 100 * 104))
+                        .frame(maxWidth: .infinity)
                 }
             }
             .frame(height: 108, alignment: .bottom)
@@ -316,9 +327,15 @@ struct SessionView: View {
     private var hardwareCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("SENSOR").font(.data(9.5, .semibold)).tracking(1.2).foregroundStyle(Color(hex: 0x6F6D78))
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(sps > 0 ? "\(sps)" : "—").font(.system(size: 26, weight: .heavy)).foregroundStyle(.white)
-                Text("SPS").font(.label(11)).foregroundStyle(Color(hex: 0xA2A0AB))
+            Group {
+                if sps > 0 {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text("\(sps)").font(.system(size: 26, weight: .heavy)).foregroundStyle(.white)
+                        Text("SPS").font(.label(11)).foregroundStyle(Color(hex: 0xA2A0AB))
+                    }
+                } else {
+                    Text("no board").font(.system(size: 20, weight: .bold)).foregroundStyle(Color(hex: 0x6F6D78))
+                }
             }
             .padding(.top, 10)
             Text("single around-ear dry channel").font(.label(11)).foregroundStyle(Color(hex: 0xA2A0AB))
@@ -345,10 +362,12 @@ struct SessionView: View {
 
 struct HourFocus: Identifiable { let hour: Int; let value: Double?; var id: Int { hour } }
 
-func hourlyMedianFocus(_ day: Day?) -> [HourFocus] {
+/// Median focus per hour of day, averaged across ALL days (that's what "avg focus by hour of day"
+/// means) — a single day is too sparse to read. Trusted epochs only; empty hours stay nil.
+func hourlyMedianFocus(_ days: [Day]) -> [HourFocus] {
     var buckets: [[Double]] = Array(repeating: [], count: 24)
-    if let day {
-        let cal = Calendar.current
+    let cal = Calendar.current
+    for day in days {
         for s in day.sessions {
             for e in s.epochs where e.trustworthy {
                 guard let f = e.focus else { continue }
