@@ -83,6 +83,11 @@ nonisolated func focusFeasibility(fs: Double, line: Double = 60) -> FocusFeasibi
 /// The flow line. Above this the session is "in flow" — relative to YOUR baseline, not anyone else's.
 nonisolated let flowThreshold = 60.0
 
+/// A generic starting baseline so the score shows IMMEDIATELY on connect — no forced 20 s wait. It is
+/// a fixed reference (β≈α+θ → E≈1), not personal, so early numbers are approximate; the optional
+/// "Optimize" (a 20 s capture, like the Sony XM4 NC optimizer) replaces it with the user's own E0.
+nonisolated let defaultBaselineEngagement = 1.0
+
 /// Median, not mean: robust to the blink and movement spikes that survive a 20 s window.
 nonisolated func median(_ xs: [Double]) -> Double {
     guard !xs.isEmpty else { return 0 }
@@ -333,6 +338,21 @@ nonisolated final class FocusEngine {
         metrics.baseline = baseline
         metrics.fsOk = feasibility.ok
         metrics.fsReason = feasibility.reason
+    }
+
+    /// The optional "Optimize": force a fresh PERSONAL baseline capture — drop to no baseline so the
+    /// next 20 s are collected and frozen as this user's own E0 (replacing the generic default).
+    func optimize() {
+        baseline = nil
+        clenchBaseline = nil
+        calSamples.removeAll()
+        calClench.removeAll()
+        scoreEma = 0; scorePrimed = false
+        clenchEma = 0; clenchPrimed = false
+        metrics.calibrating = true
+        metrics.calibrationLeftSec = opts.calibrationSec
+        metrics.baseline = nil
+        metrics.clenchBaseline = nil
     }
 
     /// Drop the baseline and start calibration over.

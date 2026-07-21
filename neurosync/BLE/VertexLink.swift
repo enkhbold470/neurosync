@@ -201,6 +201,17 @@ nonisolated final class VertexLink: NSObject {
         }
     }
 
+    /// The optional "Optimize": capture a fresh personal baseline (20 s), replacing the default.
+    func optimize() {
+        queue.async { [self] in
+            engine?.optimize()
+            if let e = engine {
+                snapshot.metrics = e.metrics
+                emit()
+            }
+        }
+    }
+
     private func teardown() {
         peripheral = nil
         dataChar = nil
@@ -256,7 +267,10 @@ nonisolated final class VertexLink: NSObject {
         snapshot.fs = Double(info.sps)
 
         // Rebuild the DSP: the filter chain, window and FFT size all derive from fs.
-        engine = FocusEngine(fs: Double(info.sps))
+        // Start with the generic default baseline so a score shows immediately — no forced 20 s
+        // calibration on connect. The optional Optimize (below) captures a personal baseline.
+        engine = FocusEngine(fs: Double(info.sps),
+                             options: FocusOptions(baselineEngagement: defaultBaselineEngagement))
         snapshot.metrics = engine!.metrics
         lastSeq = nil
 

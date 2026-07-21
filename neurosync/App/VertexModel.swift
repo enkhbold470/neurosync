@@ -441,6 +441,12 @@ final class VertexModel {
         link.recalibrate()
     }
 
+    /// The optional "Optimize" — capture a personal baseline instead of the generic default.
+    func optimize() {
+        focusHistory.removeAll()
+        link.optimize()
+    }
+
     func setRate(index: Int) {
         alphaHistory.removeAll()
         focusHistory.removeAll()
