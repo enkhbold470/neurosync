@@ -84,11 +84,32 @@ private func fixture() -> (FocusMetrics, [Double]) {
 
 @MainActor
 @Test func snapshotNoDevice() throws {
-    // 100% real: this is exactly what the app shows with no board. No fixture involved.
-    let path = try render(ContentView(model: VertexModel(), days: DayModel(), cloud: ConvexCloud()),
-                          size: CGSize(width: 1180, height: 760), to: "01-no-device.png")
+    // 100% real: this is exactly what the app shows with no board — no fixture, no metrics, and
+    // therefore no number. The strings are the ones `SessionScreen` actually passes when nothing is
+    // connected (see its `title` / `subtitle` / `gateReason`).
+    //
+    // This renders `SessionView` directly rather than `ContentView`, because ImageRenderer draws a
+    // ScrollView's scroll axis as EMPTY — going through the whole window produces a blank aurora
+    // that shows none of the surface it claims to. The window itself is still compose-checked below.
+    let view = ZStack(alignment: .top) {
+        AuroraBackground()
+        SessionView(
+            metrics: FocusMetrics(), withheld: true,
+            gateReason: "Connect a headset for a live focus score, or start a focus block.",
+            sps: 0, title: "NeuroFocus", subtitle: "ready when you are",
+            hourly: [], day: nil, yesterday: nil
+        )
+        .padding(24)
+    }
+    .frame(width: 860, height: 560)
+    let path = try render(view, size: CGSize(width: 860, height: 560), to: "01-no-device.png")
     print("SNAPSHOT \(path)")
     #expect(FileManager.default.fileExists(atPath: path))
+
+    // The whole window still has to compose with no board attached.
+    let window = try render(ContentView(model: VertexModel(), days: DayModel(), cloud: ConvexCloud()),
+                            size: CGSize(width: 1180, height: 760), to: "00-window-compose.png")
+    #expect(FileManager.default.fileExists(atPath: window))
 }
 
 /// The focus-block home in both appearances — proves the adaptive tokens flip and stay legible, and
@@ -135,6 +156,7 @@ private func fixture() -> (FocusMetrics, [Double]) {
     }
     .padding(20)
     .background(Ink.bg)
+    .environment(\.colorScheme, .dark)   // the window is pinned dark; the README should match
 
     let path = try render(view, size: CGSize(width: 620, height: 220), to: "07-block-recap.png")
     print("SNAPSHOT \(path)")
@@ -207,6 +229,7 @@ private func fixture() -> (FocusMetrics, [Double]) {
     }
     .padding(18)
     .background(Ink.bg)
+    .environment(\.colorScheme, .dark)
 
     let path = try render(view, size: CGSize(width: 900, height: 300), to: "03-gates.png")
     print("SNAPSHOT \(path)")
@@ -216,8 +239,11 @@ private func fixture() -> (FocusMetrics, [Double]) {
 
 @MainActor
 @Test func snapshotMenuBar() throws {
-    let path = try render(MenuBarPanel(model: VertexModel()).background(Ink.bg),
-                          size: CGSize(width: 280, height: 190), to: "04-menubar.png")
+    // Tall enough for the whole panel — at 190 pt it rendered cropped mid-sentence.
+    let panel = MenuBarPanel(model: VertexModel())
+        .background(Ink.bg)
+        .environment(\.colorScheme, .dark)
+    let path = try render(panel, size: CGSize(width: 300, height: 560), to: "04-menubar.png")
     print("SNAPSHOT \(path)")
     #expect(FileManager.default.fileExists(atPath: path))
 }
@@ -364,9 +390,10 @@ private func snapshotFixtureDay() -> Day {
     ]
     let view = BoardPicker(boards: boards, onPick: { _ in }, onRescan: {})
         .padding(24)
-        .frame(width: 460, height: 380, alignment: .top)
+        .frame(width: 460, height: 250, alignment: .top)
         .background(Ink.bg)
-    let path = try render(view, size: CGSize(width: 460, height: 380), to: "09-board-picker.png")
+        .environment(\.colorScheme, .dark)
+    let path = try render(view, size: CGSize(width: 460, height: 250), to: "09-board-picker.png")
     print("SNAPSHOT \(path)")
     #expect(boards.count == 3)
 }
@@ -394,8 +421,8 @@ private func snapshotFixtureDay() -> Day {
         )
         .padding(24)
     }
-    .frame(width: 860, height: 880)
-    let path = try render(view, size: CGSize(width: 860, height: 880), to: "10-session.png")
+    .frame(width: 860, height: 660)
+    let path = try render(view, size: CGSize(width: 860, height: 660), to: "10-session.png")
     print("SNAPSHOT \(path)")
     #expect(FileManager.default.fileExists(atPath: path))
 }
