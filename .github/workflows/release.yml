@@ -16,7 +16,33 @@ jobs:
     name: Signed notarized DMG
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      # Fail in 5 seconds with the name of the missing secret, rather than 40 lines into the
+      # keychain import with a cryptic openssl error. An unset secret expands to the empty
+      # string, which is indistinguishable from a set-but-empty one — both are fatal here.
+      - name: Preflight — required secrets are present
+        env:
+          CERT_P12_BASE64: ${{ secrets.DEVELOPER_ID_CERT_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
+          NOTARY_P8_BASE64: ${{ secrets.NOTARY_KEY_P8_BASE64 }}
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+        run: |
+          set -uo pipefail
+          missing=0
+          for name in CERT_P12_BASE64 NOTARY_P8_BASE64 NOTARY_KEY_ID NOTARY_ISSUER_ID; do
+            # Sizes only — never the values. A base64 blob under ~100 chars is not a real key.
+            n=$(printf '%s' "${!name}" | tr -d '[:space:]' | wc -c | tr -d ' ')
+            echo "$name: $n chars"
+            if [ "$n" -lt 20 ]; then
+              echo "::error::secret for $name is empty or truncated ($n chars) — re-set it with scripts/set-release-secrets.sh"
+              missing=1
+            fi
+          done
+          # An empty .p12 password is legal, so this one is reported, not enforced.
+          echo "CERT_PASSWORD: $([ -n "$CERT_PASSWORD" ] && echo set || echo "EMPTY (legal, but unusual)")"
+          exit $missing
 
       - name: Select newest Xcode
         run: |
@@ -118,7 +144,7 @@ jobs:
           shasum -a 256 "$DMG"
 
       - name: Upload DMG as build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: neurosync-dmg
           path: build/release/neurosync.dmg

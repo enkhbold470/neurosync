@@ -18,7 +18,7 @@ jobs:
     name: Secret guard
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Refuse committed signing keys / secrets
         run: |
           set -euo pipefail
@@ -40,7 +40,7 @@ jobs:
     name: Build & unit test (macOS)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Print exactly what this runner provides, ALWAYS — so a toolchain gap is legible
       # in the log instead of surfacing as a cryptic build error.

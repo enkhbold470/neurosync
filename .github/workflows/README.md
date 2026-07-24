@@ -15,7 +15,16 @@ Release. The API key is passed straight to `notarytool` (no keychain profile nee
 cert is imported into an ephemeral keychain that is deleted afterwards.
 
 ### Required repository secrets
-Add under **Settings → Secrets and variables → Actions** (or with `gh secret set`):
+
+**Just run `./scripts/set-release-secrets.sh`.** It exports the Developer ID identity from your
+login keychain (macOS will ask you to allow it), repacks it so only that one key travels, verifies
+the `.p12` the same way the runner does, and sets all five secrets. Re-run it after the yearly
+cert renewal.
+
+A release that dies at *"Decoded .p12: 0 bytes"* means the secret was stored empty — the job now
+catches that in the **Preflight** step instead, and the fix is that script.
+
+To do it by hand, add these under **Settings → Secrets and variables → Actions**:
 
 | Secret | What it is | How to produce |
 |---|---|---|
